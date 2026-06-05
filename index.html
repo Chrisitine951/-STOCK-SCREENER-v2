@@ -854,10 +854,14 @@ function renderReport(data) {
 
     // Winners & Losers in summary
     const tw = summary.topWinners || [], tl = summary.topLosers || [];
-    if (tw.length || tl.length) {
+    // Always show the grid
+    {
       html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">';
       html += '<div style="background:rgba(45,90,61,0.25);border-radius:6px;padding:10px 12px">';
       html += '<div style="font-family:var(--mono);font-size:10px;color:#4ade80;margin-bottom:8px">▲ 整體受益</div>';
+      if (tw.length === 0) {
+        html += '<div style="font-size:11px;color:#4ade8055">根據本次新聞暫無明確受益產業</div>';
+      }
       tw.forEach(w => {
         html += '<div style="margin-bottom:8px"><div style="font-family:var(--mono);font-size:11px;font-weight:500;color:#e8f0ea">' + w.industry + '</div>';
         html += '<div style="font-size:10px;color:#888;margin:2px 0">' + (w.reason||'') + '</div>';
@@ -868,6 +872,9 @@ function renderReport(data) {
       html += '</div>';
       html += '<div style="background:rgba(163,48,48,0.2);border-radius:6px;padding:10px 12px">';
       html += '<div style="font-family:var(--mono);font-size:10px;color:#f87171;margin-bottom:8px">▼ 整體受害</div>';
+      if (tl.length === 0) {
+        html += '<div style="font-size:11px;color:#f8717155">根據本次新聞暫無明確受害產業</div>';
+      }
       tl.forEach(l => {
         html += '<div style="margin-bottom:8px"><div style="font-family:var(--mono);font-size:11px;font-weight:500;color:#fdf0f0">' + l.industry + '</div>';
         html += '<div style="font-size:10px;color:#888;margin:2px 0">' + (l.reason||'') + '</div>';
