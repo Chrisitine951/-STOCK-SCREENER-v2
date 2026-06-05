@@ -233,11 +233,9 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
   .save-pref-btn:hover { background: var(--ink2); color: var(--bg); }
 
   /* NEWS ITEMS */
-  .news-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1px solid var(--rule); border-radius: 6px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; background: white; }
-  .news-item:hover { border-color: rgba(26,26,24,0.2); }
+  .news-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1px solid var(--rule); border-radius: 6px; margin-bottom: 8px; background: white; transition: border-color 0.15s; }
   .news-item.selected { border-color: var(--accent); background: var(--accent-light); }
-  .news-checkbox { width: 16px; height: 16px; border: 1.5px solid var(--rule); border-radius: 3px; flex-shrink: 0; margin-top: 3px; display: flex; align-items: center; justify-content: center; font-size: 10px; transition: all 0.15s; }
-  .news-item.selected .news-checkbox { background: var(--accent); border-color: var(--accent); color: white; }
+  .news-checkbox { display: none; }
   .news-body { flex: 1; }
   .news-headline { font-size: 13px; font-weight: 400; color: var(--ink); line-height: 1.5; margin-bottom: 4px; }
   .news-meta { display: flex; gap: 8px; align-items: center; }
@@ -415,14 +413,9 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
           </div>
         </div>
 
-        <button class="gen-btn" id="scanBtn" onclick="scanNews()">📡 掃描最新新聞</button>
+        <button class="gen-btn" id="scanBtn" onclick="scanAndAnalyze()">📡 掃描並分析新聞</button>
 
-        <!-- MANUAL ADD -->
-        <div class="manual-add-section">
-          <div class="sidebar-section-title">手動補充事件</div>
-          <input class="text-input" id="manualEvent" placeholder="輸入未被抓到的事件..." />
-          <button class="add-manual-btn" onclick="addManualEvent()">＋ 加入清單</button>
-        </div>
+
       </div>
 
       <!-- AUTO MODE CONTROLS -->
@@ -478,16 +471,13 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
     <div class="news-center">
       <div class="news-center-header">
         <div class="panel-label" style="margin-bottom:0">新聞清單</div>
-        <div id="newsSelectHint" style="display:none">
-          <span id="selectedCount" class="selected-count">0 則已選</span>
-          <button class="analyze-selected-btn" id="analyzeBtn" onclick="analyzeSelected()">分析選定事件 →</button>
-        </div>
+        <div id="newsScanStatus" style="font-family:var(--mono);font-size:11px;color:var(--ink3)"></div>
       </div>
 
       <div id="newsListArea">
         <div class="empty-results" style="margin-top:24px">
           <div class="empty-icon">📡</div>
-          選擇掃描類型後點「掃描最新新聞」
+          選擇掃描類型後點「掃描並分析新聞」
         </div>
       </div>
     </div>
@@ -630,6 +620,16 @@ function updateSheetStatus(msg, ok) {
 }
 
 // ── SCAN NEWS ──
+async function scanAndAnalyze() {
+  // Step 1: scan news
+  await scanNews();
+  // Step 2: auto-select all and analyze
+  if (scannedNews.length > 0) {
+    selectedNewsIds = new Set(scannedNews.map(n => n.id));
+    await analyzeSelected();
+  }
+}
+
 async function scanNews() {
   const errBox = document.getElementById('newsError');
   errBox.classList.remove('active');
@@ -695,9 +695,8 @@ function renderNewsList(news) {
 
   let html = '';
   news.forEach(n => {
-    const sel = selectedNewsIds.has(n.id);
-    html += `<div class="news-item${sel?' selected':''}" onclick="toggleNews(${n.id})" id="news-item-${n.id}">
-      <div class="news-checkbox">${sel?'✓':''}</div>
+    html += `<div class="news-item selected" id="news-item-${n.id}">
+      <div class="news-checkbox"></div>
       <div class="news-body">
         <div class="news-headline">${n.headline}</div>
         <div class="news-meta">
@@ -712,7 +711,8 @@ function renderNewsList(news) {
     </div>`;
   });
   document.getElementById('newsListArea').innerHTML = html;
-  document.getElementById('newsSelectHint').style.display = 'flex';
+  const statusEl = document.getElementById('newsScanStatus');
+  if (statusEl) statusEl.textContent = '找到 ' + news.length + ' 則新聞，分析中...';
 }
 
 function toggleNews(id) {
