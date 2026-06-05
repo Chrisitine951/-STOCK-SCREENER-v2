@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>投資分析工作台</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Noto+Serif+TC:wght@300;400;500&display=swap');
+
+:root {
+  --bg: #f5f2eb;
+  --paper: #faf8f3;
+  --ink: #1a1a18;
+  --ink2: #4a4a44;
+  --ink3: #8a8a80;
+  --rule: rgba(26,26,24,0.1);
+  --rule2: rgba(26,26,24,0.06);
+  --accent: #2d5a3d;
+  --accent-light: #e8f0ea;
+  --amber: #c17d0a;
+  --amber-light: #fdf3dc;
+  --red: #a33030;
+  --red-light: #fdf0f0;
+  --blue: #2a4a8a;
+  --blue-light: #e8eef8;
+  --mono: 'DM Mono', monospace;
+  --serif: 'Noto Serif TC', serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--serif); font-size: 15px; line-height: 1.7; min-height: 100vh; }
+
+/* MASTHEAD */
+.masthead { background: var(--ink); color: var(--bg); padding: 16px 40px; display: flex; align-items: center; gap: 24px; }
+.masthead-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.15em; color: #888; }
+.masthead-name { font-family: var(--serif); font-size: 20px; font-weight: 500; color: var(--bg); }
+.masthead-date { font-family: var(--mono); font-size: 11px; color: #666; margin-left: auto; }
+
+/* TOP NAV TABS */
+.nav-tabs { background: var(--paper); border-bottom: 2px solid var(--ink); display: flex; padding: 0 40px; gap: 0; }
+.nav-tab { padding: 14px 28px; font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; cursor: pointer; border: none; background: none; color: var(--ink3); border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+.nav-tab:hover { color: var(--ink); }
+.nav-tab.active { color: var(--ink); border-bottom-color: var(--ink); font-weight: 500; }
+
+/* PAGE */
+.page { display: none; }
+.page.active { display: block; }
+
+/* LAYOUT */
+.layout { display: grid; grid-template-columns: 1fr 1fr; max-width: 1280px; margin: 0 auto; min-height: calc(100vh - 105px); }
+.panel { padding: 28px 32px; border-right: 1px solid var(--rule); }
+.panel:last-child { border-right: none; }
+.panel-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; color: var(--ink3); text-transform: uppercase; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; gap: 8px; }
+.panel-label::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+/* MARKET TABS */
+.market-tabs { display: flex; margin-bottom: 22px; border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+.market-tab { flex: 1; padding: 9px 0; text-align: center; font-family: var(--mono); font-size: 11px; cursor: pointer; background: transparent; border: none; border-right: 1px solid var(--rule); color: var(--ink3); transition: all 0.15s; }
+.market-tab:last-child { border-right: none; }
+.market-tab:hover { background: var(--rule2); color: var(--ink); }
+.market-tab.active { background: var(--ink); color: var(--bg); }
+
+/* CRITERIA */
+.criteria-section { margin-bottom: 22px; }
+.criteria-heading { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.criteria-heading::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+.criteria-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--rule2); }
+.criteria-row:last-child { border-bottom: none; }
+.criteria-label { font-family: var(--mono); font-size: 11px; color: var(--ink2); width: 120px; flex-shrink: 0; }
+.criteria-val { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--ink); background: var(--accent-light); padding: 2px 8px; border-radius: 3px; cursor: pointer; border: 1px solid transparent; transition: all 0.1s; min-width: 70px; text-align: center; }
+.criteria-val:hover { border-color: var(--accent); }
+.criteria-val.editing { background: white; border-color: var(--accent); outline: none; }
+
+/* INPUTS */
+.field-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; color: var(--ink3); text-transform: uppercase; margin-bottom: 6px; margin-top: 16px; }
+.text-input { width: 100%; font-family: var(--mono); font-size: 12px; background: white; border: 1px solid var(--rule); border-radius: 4px; padding: 9px 12px; color: var(--ink); outline: none; transition: border-color 0.15s; }
+.text-input:focus { border-color: var(--accent); }
+.text-input::placeholder { color: var(--ink3); }
+textarea.text-input { resize: vertical; line-height: 1.7; }
+
+/* TAG SELECTOR */
+.tag-group { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+.tag-btn { font-family: var(--mono); font-size: 11px; padding: 4px 10px; border: 1px solid var(--rule); border-radius: 3px; background: white; color: var(--ink2); cursor: pointer; transition: all 0.12s; }
+.tag-btn:hover { border-color: var(--ink2); color: var(--ink); }
+.tag-btn.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* BUTTONS */
+.gen-btn { width: 100%; padding: 12px; background: var(--ink); color: var(--bg); border: none; font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; cursor: pointer; margin-top: 22px; border-radius: 4px; transition: opacity 0.15s; }
+.gen-btn:hover { opacity: 0.85; }
+.copy-btn { display: none; width: 100%; padding: 10px; background: var(--accent); color: white; border: none; font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; cursor: pointer; border-radius: 4px; margin-top: 10px; transition: opacity 0.15s; }
+.copy-btn.active { display: block; }
+.copy-btn:hover { opacity: 0.88; }
+.copy-btn.copied { background: var(--ink3); }
+.parse-btn { width: 100%; padding: 11px; background: transparent; border: 1px solid var(--ink); color: var(--ink); font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; cursor: pointer; border-radius: 4px; margin-top: 10px; transition: all 0.15s; }
+.parse-btn:hover { background: var(--ink); color: var(--bg); }
+
+/* PROMPT BOX */
+.prompt-box { background: white; border: 1px solid var(--rule); border-radius: 4px; padding: 14px; font-family: var(--mono); font-size: 11px; color: var(--ink2); line-height: 1.8; white-space: pre-wrap; min-height: 100px; margin-top: 16px; display: none; }
+.prompt-box.active { display: block; }
+
+/* HINT */
+.step-hint { background: var(--amber-light); border-left: 3px solid var(--amber); padding: 10px 14px; font-size: 12px; color: var(--ink2); border-radius: 0 4px 4px 0; margin-top: 10px; display: none; line-height: 1.7; }
+.step-hint.active { display: block; }
+.step-hint strong { color: var(--amber); }
+
+/* PASTE */
+.paste-area { width: 100%; min-height: 130px; background: white; border: 1px solid var(--rule); border-radius: 4px; padding: 12px; font-family: var(--mono); font-size: 11px; color: var(--ink); resize: vertical; outline: none; line-height: 1.7; transition: border-color 0.15s; }
+.paste-area:focus { border-color: var(--accent); }
+.paste-area::placeholder { color: var(--ink3); }
+
+/* RESULTS */
+.results-area { margin-top: 20px; }
+.result-section-title { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--ink3); text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.result-section-title::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+
+/* STOCK CARDS */
+.stock-card { background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 16px; margin-bottom: 10px; }
+.stock-card:hover { border-color: rgba(26,26,24,0.2); }
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.ticker-sym { font-family: var(--mono); font-size: 14px; font-weight: 500; }
+.ticker-ind { font-size: 11px; color: var(--ink3); font-family: var(--mono); margin-top: 1px; }
+.badge { font-family: var(--mono); font-size: 10px; padding: 3px 8px; border-radius: 3px; letter-spacing: 0.04em; }
+.badge-value { background: var(--accent-light); color: var(--accent); }
+.badge-growth { background: var(--blue-light); color: var(--blue); }
+.badge-recovery { background: var(--amber-light); color: var(--amber); }
+.metrics-row { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.metric-tag { font-family: var(--mono); font-size: 10px; padding: 2px 7px; background: white; border: 1px solid var(--rule); border-radius: 3px; color: var(--ink2); }
+.metric-tag span { color: var(--ink); font-weight: 500; }
+.card-desc { font-size: 12px; color: var(--ink2); line-height: 1.75; margin-bottom: 6px; }
+.card-risk { font-family: var(--mono); font-size: 11px; color: var(--red); opacity: 0.8; }
+.score-row { display: flex; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--rule2); }
+.score-item { flex: 1; }
+.score-name { font-family: var(--mono); font-size: 9px; color: var(--ink3); letter-spacing: 0.06em; margin-bottom: 3px; }
+.score-track { height: 3px; background: var(--rule); border-radius: 2px; overflow: hidden; margin-bottom: 2px; }
+.score-fill { height: 100%; border-radius: 2px; }
+.score-num { font-family: var(--mono); font-size: 10px; color: var(--ink2); }
+
+/* EVENT CARDS */
+.event-impact-card { background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; padding: 16px 18px; margin-bottom: 12px; }
+.event-card-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; color: var(--ink3); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
+.impact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.impact-col { border-radius: 6px; padding: 12px 14px; }
+.impact-col.win { background: var(--accent-light); border: 1px solid rgba(45,90,61,0.15); }
+.impact-col.lose { background: var(--red-light); border: 1px solid rgba(163,48,48,0.15); }
+.impact-col-title { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; margin-bottom: 8px; }
+.impact-col.win .impact-col-title { color: var(--accent); }
+.impact-col.lose .impact-col-title { color: var(--red); }
+.impact-stock { font-size: 12px; color: var(--ink2); padding: 3px 0; border-bottom: 1px solid rgba(0,0,0,0.04); display: flex; align-items: baseline; gap: 8px; }
+.impact-stock:last-child { border-bottom: none; }
+.impact-stock-name { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--ink); }
+.history-box { background: white; border: 1px solid var(--rule); border-radius: 5px; padding: 10px 14px; margin-bottom: 10px; }
+.history-title { font-family: var(--mono); font-size: 10px; color: var(--amber); letter-spacing: 0.08em; margin-bottom: 6px; }
+.history-content { font-size: 12px; color: var(--ink2); line-height: 1.75; }
+.action-box { border-radius: 5px; padding: 12px 14px; margin-bottom: 10px; }
+.action-hold { background: var(--accent-light); border-left: 3px solid var(--accent); }
+.action-wait { background: var(--amber-light); border-left: 3px solid var(--amber); }
+.action-reduce { background: var(--red-light); border-left: 3px solid var(--red); }
+.action-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; margin-bottom: 4px; }
+.action-hold .action-label { color: var(--accent); }
+.action-wait .action-label { color: var(--amber); }
+.action-reduce .action-label { color: var(--red); }
+.action-content { font-size: 12px; color: var(--ink2); line-height: 1.7; }
+.summary-box { background: var(--accent-light); border-left: 3px solid var(--accent); padding: 10px 14px; font-size: 13px; color: var(--ink2); border-radius: 0 4px 4px 0; margin-bottom: 16px; display: none; }
+.summary-box.active { display: block; }
+.error-box { background: var(--red-light); border: 1px solid #f0c0c0; border-radius: 4px; padding: 10px 14px; font-family: var(--mono); font-size: 11px; color: var(--red); margin-top: 10px; display: none; }
+.error-box.active { display: block; }
+.empty-results { text-align: center; padding: 40px 20px; color: var(--ink3); font-family: var(--mono); font-size: 12px; border: 1px dashed var(--rule); border-radius: 6px; }
+.empty-icon { font-size: 26px; margin-bottom: 8px; opacity: 0.3; }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 2px; }
+
+  .apikey-bar {
+    background: #111318;
+    border-bottom: 1px solid var(--rule);
+    padding: 9px 40px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .apikey-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--ink3); white-space: nowrap; }
+  .apikey-input {
+    flex: 1; max-width: 360px;
+    background: #1e2128; border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 4px; padding: 6px 12px;
+    color: #c8c4b8; font-family: var(--mono); font-size: 12px; outline: none;
+    transition: border-color 0.15s;
+  }
+  .apikey-input:focus { border-color: var(--accent); }
+  .apikey-input::placeholder { color: #555; }
+  .apikey-status { font-family: var(--mono); font-size: 11px; color: #555; }
+  .apikey-status.ok { color: var(--accent); }
+  .apikey-hint { font-size: 11px; color: #555; margin-left: auto; }
+  .apikey-hint a { color: #6a9fd8; text-decoration: none; }
+
+
+  /* NEWS RADAR LAYOUT */
+  .news-layout { display: grid; grid-template-columns: 280px 1fr 1fr; max-width: 1400px; margin: 0 auto; min-height: calc(100vh - 105px); }
+  .news-sidebar { padding: 24px 20px; border-right: 1px solid var(--rule); background: var(--paper); overflow-y: auto; }
+  .news-center { padding: 24px 24px; border-right: 1px solid var(--rule); overflow-y: auto; }
+  .news-right { padding: 24px 24px; overflow-y: auto; }
+  .news-center-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--rule); }
+
+  /* MODE TOGGLE */
+  .mode-toggle { display: flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; margin-bottom: 20px; }
+  .mode-btn { flex: 1; padding: 9px 6px; font-family: var(--mono); font-size: 11px; border: none; background: transparent; color: var(--ink3); cursor: pointer; transition: all 0.15s; }
+  .mode-btn:hover { color: var(--ink); }
+  .mode-btn.active { background: var(--ink); color: var(--bg); }
+
+  /* SIDEBAR SECTIONS */
+  .sidebar-section { margin-bottom: 20px; }
+  .sidebar-section-title { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--ink3); text-transform: uppercase; margin-bottom: 8px; }
+
+  /* SCAN TYPE CARDS */
+  .scan-type-card { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--rule); border-radius: 6px; cursor: pointer; margin-bottom: 6px; transition: all 0.15s; background: white; }
+  .scan-type-card:hover { border-color: var(--ink2); }
+  .scan-type-card.active { border-color: var(--accent); background: var(--accent-light); }
+  .scan-type-icon { font-size: 18px; flex-shrink: 0; }
+  .scan-type-name { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--ink); }
+  .scan-type-desc { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+
+  /* MANUAL ADD */
+  .manual-add-section { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--rule); }
+  .add-manual-btn { width: 100%; margin-top: 6px; padding: 7px; background: transparent; border: 1px dashed var(--rule); border-radius: 4px; font-family: var(--mono); font-size: 11px; color: var(--ink3); cursor: pointer; transition: all 0.15s; }
+  .add-manual-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* PREFS */
+  .pref-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--rule2); }
+  .pref-label { font-family: var(--mono); font-size: 11px; color: var(--ink2); }
+  .pref-select { font-family: var(--mono); font-size: 11px; background: white; border: 1px solid var(--rule); border-radius: 3px; padding: 3px 6px; color: var(--ink); outline: none; }
+  .save-pref-btn { width: 100%; margin-top: 10px; padding: 8px; background: transparent; border: 1px solid var(--ink2); border-radius: 4px; font-family: var(--mono); font-size: 11px; color: var(--ink2); cursor: pointer; transition: all 0.15s; }
+  .save-pref-btn:hover { background: var(--ink2); color: var(--bg); }
+
+  /* NEWS ITEMS */
+  .news-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1px solid var(--rule); border-radius: 6px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; background: white; }
+  .news-item:hover { border-color: rgba(26,26,24,0.2); }
+  .news-item.selected { border-color: var(--accent); background: var(--accent-light); }
+  .news-checkbox { width: 16px; height: 16px; border: 1.5px solid var(--rule); border-radius: 3px; flex-shrink: 0; margin-top: 3px; display: flex; align-items: center; justify-content: center; font-size: 10px; transition: all 0.15s; }
+  .news-item.selected .news-checkbox { background: var(--accent); border-color: var(--accent); color: white; }
+  .news-body { flex: 1; }
+  .news-headline { font-size: 13px; font-weight: 400; color: var(--ink); line-height: 1.5; margin-bottom: 4px; }
+  .news-meta { display: flex; gap: 8px; align-items: center; }
+  .news-tag { font-family: var(--mono); font-size: 10px; padding: 1px 6px; border-radius: 2px; }
+  .news-tag-macro { background: var(--blue-light); color: var(--blue); }
+  .news-tag-micro { background: var(--amber-light); color: var(--amber); }
+  .news-tag-geo { background: #f0e8f8; color: #6a3a9a; }
+  .news-summary { font-size: 11px; color: var(--ink3); margin-top: 4px; line-height: 1.6; }
+  .news-impact { font-family: var(--mono); font-size: 10px; padding: 1px 6px; border-radius: 2px; }
+  .news-impact-up { background: var(--accent-light); color: var(--accent); }
+  .news-impact-down { background: var(--red-light); color: var(--red); }
+  .news-impact-mixed { background: var(--amber-light); color: var(--amber); }
+
+  /* SELECT HINT */
+  .selected-count { font-family: var(--mono); font-size: 11px; color: var(--accent); background: var(--accent-light); padding: 3px 10px; border-radius: 3px; }
+  .analyze-selected-btn { font-family: var(--mono); font-size: 11px; padding: 6px 14px; background: var(--ink); color: var(--bg); border: none; border-radius: 4px; cursor: pointer; margin-left: 8px; transition: opacity 0.15s; }
+  .analyze-selected-btn:hover { opacity: 0.85; }
+  .analyze-selected-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* REPORT CARDS */
+  .report-event-block { background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; padding: 16px 18px; margin-bottom: 16px; }
+  .report-event-title { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 6px; line-height: 1.5; }
+  .report-event-summary { font-size: 12px; color: var(--ink2); line-height: 1.75; margin-bottom: 12px; }
+  .report-impact-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .report-impact-pill { font-family: var(--mono); font-size: 10px; padding: 3px 8px; border-radius: 3px; }
+
+  /* LOADING SKELETON */
+  .skeleton { background: linear-gradient(90deg, var(--rule2) 25%, var(--rule) 50%, var(--rule2) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .skel-line { height: 12px; margin-bottom: 8px; }
+  .skel-short { width: 40%; }
+  .skel-medium { width: 70%; }
+  .skel-long { width: 95%; }
+
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div>
+    <div class="masthead-title">◈ INVESTMENT DESK</div>
+    <div class="masthead-name">投資分析工作台</div>
+  </div>
+  <div class="masthead-date" id="mastDate"></div>
+</div>
+
+<div class="nav-tabs">
+  <button class="nav-tab active" onclick="switchPage('screener', this)">📋 選股系統</button>
+  <button class="nav-tab" onclick="switchPage('news', this)">📡 新聞雷達</button>
+</div>
+
+<div class="apikey-bar">
+  <span class="apikey-label">GEMINI API KEY</span>
+  <input class="apikey-input" id="apiKeyInput" type="password"
+    placeholder="貼上你的 Gemini API Key"
+    oninput="onApiKeyChange(this.value)" />
+  <span class="apikey-status" id="apiKeyStatus">未設定</span>
+  <span class="apikey-hint">取得免費 Key → <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a></span>
+</div>
+
+<!-- ==================== PAGE 1: SCREENER ==================== -->
+<div class="page active" id="page-screener">
+  <div class="layout">
+    <div class="panel">
+      <div class="panel-label">第一步：設定篩選條件，產生 Prompt</div>
+
+      <div class="market-tabs">
+        <button class="market-tab active" onclick="setMarket('both')" id="tab-both">🌐 台股 + 美股</button>
+        <button class="market-tab" onclick="setMarket('tw')" id="tab-tw">🇹🇼 台股</button>
+        <button class="market-tab" onclick="setMarket('us')" id="tab-us">🇺🇸 美股</button>
+      </div>
+
+      <div id="tw-section" class="criteria-section">
+        <div class="criteria-heading">台股條件</div>
+        <div class="criteria-row"><span class="criteria-label">P/B 股價淨值比</span><span class="criteria-val" onclick="editVal(this)">＜ 1.5</span></div>
+        <div class="criteria-row"><span class="criteria-label">ROE 股東報酬率</span><span class="criteria-val" onclick="editVal(this)">＞ 10%</span></div>
+        <div class="criteria-row"><span class="criteria-label">EPS 成長</span><span class="criteria-val" onclick="editVal(this)">近3年穩定</span></div>
+        <div class="criteria-row"><span class="criteria-label">自由現金流</span><span class="criteria-val" onclick="editVal(this)">為正</span></div>
+        <div class="criteria-row"><span class="criteria-label">負債比</span><span class="criteria-val" onclick="editVal(this)">＜ 40%</span></div>
+        <div class="criteria-row"><span class="criteria-label">市值範圍</span><span class="criteria-val" onclick="editVal(this)">30–200億</span></div>
+        <div class="criteria-row"><span class="criteria-label">持股結構</span><span class="criteria-val" onclick="editVal(this)">董監持股高</span></div>
+      </div>
+
+      <div id="us-section" class="criteria-section">
+        <div class="criteria-heading">美股條件</div>
+        <div class="criteria-row"><span class="criteria-label">P/E 本益比</span><span class="criteria-val" onclick="editVal(this)">＜ 15</span></div>
+        <div class="criteria-row"><span class="criteria-label">P/B 股價淨值比</span><span class="criteria-val" onclick="editVal(this)">＜ 2</span></div>
+        <div class="criteria-row"><span class="criteria-label">市值範圍</span><span class="criteria-val" onclick="editVal(this)">$300M–$2B</span></div>
+        <div class="criteria-row"><span class="criteria-label">GF Score</span><span class="criteria-val" onclick="editVal(this)">＞ 80</span></div>
+        <div class="criteria-row"><span class="criteria-label">聰明錢訊號</span><span class="criteria-val" onclick="editVal(this)">內部人買進</span></div>
+        <div class="criteria-row"><span class="criteria-label">分析師覆蓋</span><span class="criteria-val" onclick="editVal(this)">低覆蓋率</span></div>
+      </div>
+
+      <div class="criteria-section">
+        <div class="criteria-heading">額外條件（選填）</div>
+        <input class="text-input" id="extraCriteria" placeholder="例如：偏好半導體、排除金融股、要有股息..." />
+      </div>
+
+      <button class="gen-btn" id="screenerRunBtn" onclick="runScreener()">▶ 執行篩選</button>
+      <div class="prompt-box" id="screenerPromptBox" style="display:none"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-label">篩選結果</div>
+      <div class="error-box" id="screenerError"></div>
+      <div id="debugBox" style="display:none;background:#1a1a18;color:#4ade80;font-family:var(--mono);font-size:10px;padding:12px;border-radius:4px;margin-bottom:12px;white-space:pre-wrap;max-height:200px;overflow:auto;"></div>
+      <div class="summary-box" id="screenerSummary"></div>
+      <div class="results-area" id="screenerResults">
+        <div class="empty-results"><div class="empty-icon">◈</div>設定條件後點「執行篩選」，AI 將自動產生候選名單</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ==================== PAGE 2: NEWS RADAR ==================== -->
+<div class="page" id="page-news">
+  <div class="news-layout">
+
+    <!-- LEFT: CONTROLS -->
+    <div class="news-sidebar">
+
+      <!-- MODE TOGGLE -->
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="modeExplore" onclick="setMode('explore')">🔍 探索模式</button>
+        <button class="mode-btn" id="modeAuto" onclick="setMode('auto')">⚡ 自動模式</button>
+      </div>
+
+      <!-- EXPLORE MODE CONTROLS -->
+      <div id="exploreControls">
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">新聞時間範圍</div>
+          <div class="tag-group" id="timeGroup">
+            <button class="tag-btn active" onclick="toggleTag(this,'timeGroup')">今日</button>
+            <button class="tag-btn" onclick="toggleTag(this,'timeGroup')">本週</button>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">掃描類型</div>
+          <div class="scan-type-card active" id="scanMacro" onclick="setScanType('macro')">
+            <div class="scan-type-icon">🌐</div>
+            <div>
+              <div class="scan-type-name">宏觀總覽</div>
+              <div class="scan-type-desc">總經政策・地緣政治・財經大事</div>
+            </div>
+          </div>
+          <div class="scan-type-card" id="scanMicro" onclick="setScanType('micro')">
+            <div class="scan-type-icon">🔬</div>
+            <div>
+              <div class="scan-type-name">產業個股</div>
+              <div class="scan-type-desc">原物料・產業事件・企業財報</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-section" id="microFilters" style="display:none">
+          <div class="sidebar-section-title">產業篩選（選填）</div>
+          <div class="tag-group" id="industryGroup">
+            <button class="tag-btn" onclick="toggleTag(this,'industryGroup')">半導體</button>
+            <button class="tag-btn" onclick="toggleTag(this,'industryGroup')">AI/科技</button>
+            <button class="tag-btn" onclick="toggleTag(this,'industryGroup')">能源</button>
+            <button class="tag-btn" onclick="toggleTag(this,'industryGroup')">金融</button>
+            <button class="tag-btn" onclick="toggleTag(this,'industryGroup')">消費</button>
+            <button class="tag-btn" onclick="toggleTag(this,'industryGroup')">生技醫療</button>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">影響市場</div>
+          <div class="tag-group" id="newsMarketGroup">
+            <button class="tag-btn active" onclick="toggleTag(this,'newsMarketGroup')">台股</button>
+            <button class="tag-btn active" onclick="toggleTag(this,'newsMarketGroup')">美股</button>
+          </div>
+        </div>
+
+        <button class="gen-btn" id="scanBtn" onclick="scanNews()">📡 掃描最新新聞</button>
+
+        <!-- MANUAL ADD -->
+        <div class="manual-add-section">
+          <div class="sidebar-section-title">手動補充事件</div>
+          <input class="text-input" id="manualEvent" placeholder="輸入未被抓到的事件..." />
+          <button class="add-manual-btn" onclick="addManualEvent()">＋ 加入清單</button>
+        </div>
+      </div>
+
+      <!-- AUTO MODE CONTROLS -->
+      <div id="autoControls" style="display:none">
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">自動模式設定</div>
+          <div class="pref-row">
+            <span class="pref-label">執行頻率</span>
+            <select class="pref-select" id="autoFreq">
+              <option>每日早上</option>
+              <option>每週一</option>
+              <option>手動觸發</option>
+            </select>
+          </div>
+          <div class="pref-row">
+            <span class="pref-label">新聞數量</span>
+            <select class="pref-select" id="autoCount">
+              <option>3則重點</option>
+              <option>5則重點</option>
+              <option>全部掃描</option>
+            </select>
+          </div>
+          <div class="pref-row">
+            <span class="pref-label">掃描範圍</span>
+            <select class="pref-select" id="autoScope">
+              <option>宏觀＋產業</option>
+              <option>只看宏觀</option>
+              <option>只看產業</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">我的持倉（AI 優先分析相關新聞）</div>
+          <textarea class="text-input" id="myHoldings" rows="3" placeholder="例如：台積電、聯發科、NVDA、AAPL..."></textarea>
+          <button class="save-pref-btn" onclick="savePrefs()">💾 儲存偏好設定</button>
+
+        <div class="sidebar-section" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--rule)">
+          <div class="sidebar-section-title">Google Sheets 同步憑證</div>
+          <div style="font-size:11px;color:var(--ink3);margin-bottom:8px">填入後自動儲存，分析完成後同步記錄</div>
+          <input class="text-input" id="sheetsEmailInput" placeholder="client_email（...iam.gserviceaccount.com）" style="margin-bottom:6px;font-size:11px" />
+          <textarea class="text-input" id="sheetsKeyInput" rows="3" placeholder="private_key（-----BEGIN PRIVATE KEY-----...）" style="font-size:10px;margin-bottom:6px"></textarea>
+          <button class="save-pref-btn" onclick="saveSheetsCreds()">🔐 儲存憑證（僅存於本機）</button>
+          <div id="sheetsCredsStatus" style="font-family:var(--mono);font-size:10px;color:var(--ink3);margin-top:6px"></div>
+        </div>
+        </div>
+
+        <button class="gen-btn" id="autoRunBtn" onclick="runAutoReport()">⚡ 一鍵生成報告</button>
+      </div>
+    </div>
+
+    <!-- CENTER: NEWS LIST -->
+    <div class="news-center">
+      <div class="news-center-header">
+        <div class="panel-label" style="margin-bottom:0">新聞清單</div>
+        <div id="newsSelectHint" style="display:none">
+          <span id="selectedCount" class="selected-count">0 則已選</span>
+          <button class="analyze-selected-btn" id="analyzeBtn" onclick="analyzeSelected()">分析選定事件 →</button>
+        </div>
+      </div>
+
+      <div id="newsListArea">
+        <div class="empty-results" style="margin-top:24px">
+          <div class="empty-icon">📡</div>
+          選擇掃描類型後點「掃描最新新聞」
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: ANALYSIS REPORT -->
+    <div class="news-right">
+      <div class="panel-label">分析報告</div>
+      <div class="error-box" id="newsError"></div>
+      <div id="newsReportArea">
+        <div class="empty-results">
+          <div class="empty-icon">📊</div>
+          選定新聞後點「分析選定事件」
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<script>
+document.getElementById('mastDate').textContent = new Date().toLocaleDateString('zh-TW', {year:'numeric',month:'long',day:'numeric'});
+
+// ── API KEY ──
+function getApiKey() { return (document.getElementById('apiKeyInput')?.value || '').trim(); }
+function onApiKeyChange(val) {
+  const status = document.getElementById('apiKeyStatus');
+  const trimmed = val.trim();
+  if (trimmed.length > 20) {
+    status.textContent = '✓ 已設定';
+    status.className = 'apikey-status ok';
+    localStorage.setItem('screener_api_key', trimmed);
+  } else if (trimmed.length > 0) {
+    status.textContent = '格式有誤';
+    status.className = 'apikey-status';
+  } else {
+    status.textContent = '未設定';
+    status.className = 'apikey-status';
+  }
+}
+
+// ══════════════════════════════════════════
+// NEWS RADAR
+// ══════════════════════════════════════════
+let currentMode = 'explore';
+let currentScanType = 'macro';
+let scannedNews = [];
+let selectedNewsIds = new Set();
+let savedPrefs = {};
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('modeExplore').classList.toggle('active', mode === 'explore');
+  document.getElementById('modeAuto').classList.toggle('active', mode === 'auto');
+  document.getElementById('exploreControls').style.display = mode === 'explore' ? 'block' : 'none';
+  document.getElementById('autoControls').style.display = mode === 'auto' ? 'block' : 'none';
+}
+
+function setScanType(type) {
+  currentScanType = type;
+  document.getElementById('scanMacro').classList.toggle('active', type === 'macro');
+  document.getElementById('scanMicro').classList.toggle('active', type === 'micro');
+  document.getElementById('microFilters').style.display = type === 'micro' ? 'block' : 'none';
+}
+
+function savePrefs() {
+  savedPrefs = {
+    freq: document.getElementById('autoFreq').value,
+    count: document.getElementById('autoCount').value,
+    scope: document.getElementById('autoScope').value,
+    holdings: document.getElementById('myHoldings').value
+  };
+  localStorage.setItem('news_prefs', JSON.stringify(savedPrefs));
+  const btn = document.querySelector('.save-pref-btn');
+  btn.textContent = '✓ 已儲存';
+  setTimeout(() => { btn.textContent = '💾 儲存偏好設定'; }, 2000);
+}
+
+function loadPrefs() {
+  const saved = localStorage.getItem('news_prefs');
+  if (saved) {
+    savedPrefs = JSON.parse(saved);
+    if (savedPrefs.holdings) document.getElementById('myHoldings').value = savedPrefs.holdings;
+    if (savedPrefs.freq) document.getElementById('autoFreq').value = savedPrefs.freq;
+    if (savedPrefs.count) document.getElementById('autoCount').value = savedPrefs.count;
+    if (savedPrefs.scope) document.getElementById('autoScope').value = savedPrefs.scope;
+  }
+  // Restore sheets creds
+  const email = localStorage.getItem('sheets_client_email');
+  const key = localStorage.getItem('sheets_private_key');
+  const emailEl = document.getElementById('sheetsEmailInput');
+  const keyEl = document.getElementById('sheetsKeyInput');
+  if (email && emailEl) emailEl.value = email;
+  if (key && keyEl) keyEl.value = key;
+  if (email && key) updateSheetStatus('✓ 憑證已設定，分析完成後將自動同步', true);
+}
+
+function saveSheetsCreds() {
+  const email = document.getElementById('sheetsEmailInput')?.value.trim();
+  const key = document.getElementById('sheetsKeyInput')?.value.trim();
+  if (!email || !key) { updateSheetStatus('請填入 email 和 private key'); return; }
+  if (!email.includes('iam.gserviceaccount.com')) { updateSheetStatus('email 格式有誤'); return; }
+  if (!key.includes('BEGIN PRIVATE KEY')) { updateSheetStatus('private key 格式有誤'); return; }
+  localStorage.setItem('sheets_client_email', email);
+  localStorage.setItem('sheets_private_key', key);
+  updateSheetStatus('✓ 憑證已儲存！下次分析完成後將同步到 Google Sheets', true);
+}
+
+function updateSheetStatus(msg, ok) {
+  const el = document.getElementById('sheetsCredsStatus');
+  if (el) { el.textContent = msg; el.style.color = ok ? 'var(--accent)' : 'var(--red)'; }
+}
+
+// ── SCAN NEWS ──
+async function scanNews() {
+  const errBox = document.getElementById('newsError');
+  errBox.classList.remove('active');
+  setLoading('scanBtn', true, '📡 掃描最新新聞');
+  selectedNewsIds.clear();
+  updateSelectHint();
+  showNewsSkeleton();
+
+  const times = getActiveTags('timeGroup');
+  const markets = getActiveTags('newsMarketGroup');
+  const timeLabel = times.includes('本週') ? '本週（過去7天）' : '今日（過去24小時）';
+  const industries = currentScanType === 'micro' ? getActiveTags('industryGroup') : [];
+
+  const macroTopics = '總經政策（Fed利率、通膨、GDP）、地緣政治（戰爭、貿易摩擦、制裁）、央行決策、匯率外匯';
+  const microTopics = industries.length > 0
+    ? industries.join('、') + '相關的產業事件、企業財報、原物料價格、供應鏈變化'
+    : '半導體、能源、原物料、企業財報、產業供需、併購事件';
+
+  const topics = currentScanType === 'macro' ? macroTopics : microTopics;
+  const today = new Date().toLocaleDateString('zh-TW');
+
+  const schema = '{"scanDate":"DATE","timeRange":"RANGE","news":[{"id":1,"headline":"事件標題（請使用真實新聞標題）","category":"macro或micro或geo","impact":"up或down或mixed","summary":"一句話說明對股市的潛在影響","relevance":"high或medium","source":"來源媒體名稱"}]}';
+  const prompt = '請使用 Google Search 搜尋' + timeLabel + '內，真實發生的、可能影響' + markets.join('、') + '股市的重大事件，範圍：' + topics + '。只列出真實存在的新聞，不要捏造。找出8到10則最重要的事件。所有headline和summary必須用繁體中文輸出，即使原始新聞是英文也要翻譯成繁體中文。只輸出純JSON一行不要markdown，格式：' + schema.replace('DATE', today).replace('RANGE', timeLabel) + '。category值：macro=總經政策、micro=產業個股、geo=地緣政治。每則新聞的summary限20字內。';
+
+  try {
+    const raw = await callGemini(prompt, 0, 0, true);
+    // Strip grounding metadata if present, extract JSON
+    const parsed = parseJSON(raw);
+    scannedNews = parsed.news || [];
+    renderNewsList(scannedNews);
+  } catch(e) {
+    errBox.textContent = '錯誤：' + e.message;
+    errBox.classList.add('active');
+    document.getElementById('newsListArea').innerHTML = '<div class="empty-results"><div class="empty-icon">📡</div>掃描失敗，請重試</div>';
+  }
+  setLoading('scanBtn', false, '📡 掃描最新新聞');
+}
+
+function showNewsSkeleton() {
+  let html = '';
+  for (let i = 0; i < 6; i++) {
+    html += `<div class="news-item" style="cursor:default">
+      <div class="news-checkbox"></div>
+      <div class="news-body">
+        <div class="skeleton skel-line skel-medium" style="margin-bottom:6px"></div>
+        <div class="skeleton skel-line skel-long" style="margin-bottom:6px"></div>
+        <div class="skeleton skel-line skel-short"></div>
+      </div>
+    </div>`;
+  }
+  document.getElementById('newsListArea').innerHTML = html;
+}
+
+function renderNewsList(news) {
+  if (!news.length) {
+    document.getElementById('newsListArea').innerHTML = '<div class="empty-results"><div class="empty-icon">📡</div>未找到相關新聞</div>';
+    return;
+  }
+  const catLabel = { macro:'總經', micro:'產業', geo:'地緣政治' };
+  const catClass = { macro:'news-tag-macro', micro:'news-tag-micro', geo:'news-tag-geo' };
+  const impactLabel = { up:'利多 ▲', down:'利空 ▼', mixed:'影響混合' };
+  const impactClass = { up:'news-impact-up', down:'news-impact-down', mixed:'news-impact-mixed' };
+
+  let html = '';
+  news.forEach(n => {
+    const sel = selectedNewsIds.has(n.id);
+    html += `<div class="news-item${sel?' selected':''}" onclick="toggleNews(${n.id})" id="news-item-${n.id}">
+      <div class="news-checkbox">${sel?'✓':''}</div>
+      <div class="news-body">
+        <div class="news-headline">${n.headline}</div>
+        <div class="news-meta">
+          <span class="news-tag ${catClass[n.category]||'news-tag-macro'}">${catLabel[n.category]||n.category}</span>
+          <span class="news-impact ${impactClass[n.impact]||'news-impact-mixed'}">${impactLabel[n.impact]||n.impact}</span>
+          ${n.relevance==='high' ? '<span style="font-family:var(--mono);font-size:10px;color:var(--amber)">★ 高關聯</span>' : ''}
+          ${n.manual ? '<span style="font-family:var(--mono);font-size:10px;color:var(--ink3)">手動</span>' : ''}
+        </div>
+        <div class="news-summary">${n.summary}</div>
+        ${n.source ? '<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);margin-top:3px">📰 ' + n.source + '</div>' : ''}
+      </div>
+    </div>`;
+  });
+  document.getElementById('newsListArea').innerHTML = html;
+  document.getElementById('newsSelectHint').style.display = 'flex';
+}
+
+function toggleNews(id) {
+  if (selectedNewsIds.has(id)) { selectedNewsIds.delete(id); }
+  else { selectedNewsIds.add(id); }
+  const item = document.getElementById('news-item-' + id);
+  if (item) {
+    item.classList.toggle('selected', selectedNewsIds.has(id));
+    item.querySelector('.news-checkbox').textContent = selectedNewsIds.has(id) ? '✓' : '';
+  }
+  updateSelectHint();
+}
+
+function updateSelectHint() {
+  const count = selectedNewsIds.size;
+  const countEl = document.getElementById('selectedCount');
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  if (countEl) countEl.textContent = `${count} 則已選`;
+  if (analyzeBtn) analyzeBtn.disabled = count === 0;
+}
+
+function addManualEvent() {
+  const input = document.getElementById('manualEvent');
+  const val = input.value.trim();
+  if (!val) return;
+  const id = Date.now();
+  scannedNews.push({ id, headline: val, category: 'macro', impact: 'mixed', summary: '手動新增', relevance: 'high', manual: true });
+  renderNewsList(scannedNews);
+  input.value = '';
+}
+
+// ── ANALYZE SELECTED ──
+async function analyzeSelected() {
+  if (!selectedNewsIds.size) return;
+  const errBox = document.getElementById('newsError');
+  errBox.classList.remove('active');
+  setLoading('analyzeBtn', true, '分析選定事件 →');
+
+  const selected = scannedNews.filter(n => selectedNewsIds.has(n.id));
+  const markets = getActiveTags('newsMarketGroup');
+  const today = new Date().toLocaleDateString('zh-TW');
+  const headlineList = selected.map((n,i) => (i+1) + '. ' + n.headline).join(' | ');
+
+  showReportSkeleton();
+
+  // ── 步驟一：綜合摘要（較短，不容易截斷）──
+  const holdings = JSON.parse(localStorage.getItem('news_prefs') || '{}').holdings || '';
+  const holdingsHint = holdings ? '（特別注意與以下持倉的關聯：' + holdings + '）' : '';
+  const summarySchema = '{"reportDate":"DATE","overallSentiment":"bullish或bearish或neutral","marketOutlook":"整體研判","topWinners":[{"industry":"產業","stocks":["個股"],"reason":"原因","sourcedFrom":"來自第幾則新聞，例如：第1則"}],"topLosers":[{"industry":"產業","stocks":["個股"],"reason":"原因","sourcedFrom":"來自第幾則新聞"}],"keyActions":[{"type":"持有或觀望或減碼","target":"對象","reason":"建議","sourcedFrom":"依據第幾則新聞"}]}';
+  const numberedHeadlines = selected.map((n,i) => '第' + (i+1) + '則：' + n.headline).join('；');
+  const summaryPrompt = '以下是編號過的' + selected.length + '則新聞：' + numberedHeadlines + '。請只根據這些新聞的實際內容，推導出哪些產業受益、哪些受害，每個結論必須在sourcedFrom標明來自第幾則新聞作為依據。若找不到支持某產業受益或受害的新聞，就不要列出該產業。只輸出純JSON一行不要markdown，格式：' + summarySchema.replace('DATE', today) + '。嚴格限制：topWinners最多2個、topLosers最多2個、keyActions最多2條、stocks各1支、reason最多10字、marketOutlook最多30字。';
+
+  // ── 步驟二：個別事件分析（每次只分析2則，分批處理）──
+  const eventSchema = '{"headline":"標題","impact":"overall_positive或overall_negative或mixed","summary":"1句說明","winners":[{"industry":"產業","stocks":[{"name":"個股","reason":"原因"}]}],"losers":[{"industry":"產業","stocks":[{"name":"個股","reason":"原因"}]}],"action":{"type":"持有或觀望或減碼","reason":"1句"}}';
+
+  try {
+    // Run summary first
+    const summaryRaw = await callGemini(summaryPrompt);
+    const summaryParsed = parseJSON(summaryRaw);
+
+    // Run individual analysis in batches of 2
+    const batchSize = 1;  // Process one at a time to prevent JSON truncation
+    const eventResults = [];
+    for (let i = 0; i < selected.length; i += batchSize) {
+      const batch = selected.slice(i, i + batchSize);
+      const batchHeadlines = batch.map((n,j) => (j+1) + '. ' + n.headline).join(' | ');
+      const eventPrompt = '針對以下' + batch.length + '則新聞，逐一分析對' + markets.join('、') + '股市的影響：' + batchHeadlines + '。輸出純JSON陣列，不要markdown不要換行，格式：[' + eventSchema + ']。嚴格限制：每則只能有1個winner和1個loser產業，每個產業只能有1支個股，summary限15字，reason限10字，action.reason限15字。';
+      try {
+        const batchRaw = await callGemini(eventPrompt);
+        // Handle both array and object responses
+        let batchParsed;
+        const cleanRaw = batchRaw.replace(/```json|```/g, '').trim();
+        // Try array first
+        const arrMatch = cleanRaw.match(/\[[\s\S]*\]/);
+        const objMatch = cleanRaw.match(/\{[\s\S]*\}/);
+        if (arrMatch) {
+          batchParsed = JSON.parse(arrMatch[0]);
+        } else if (objMatch) {
+          batchParsed = [JSON.parse(objMatch[0])];
+        } else {
+          throw new Error('no JSON found');
+        }
+        const arr = Array.isArray(batchParsed) ? batchParsed : [batchParsed];
+        eventResults.push(...arr);
+      } catch(be) {
+        console.warn('Batch failed:', be.message);
+        batch.forEach(n => eventResults.push({ headline: n.headline, impact: 'mixed', summary: '個別分析暫時失敗', winners: [], losers: [], action: null }));
+      }
+      if (i + batchSize < selected.length) await sleep(2000); // Rate limit buffer between each
+    }
+
+    // Combine and render
+    const fullReport = {
+      reportDate: today,
+      newsCount: selected.length,
+      summary: summaryParsed,
+      events: eventResults,
+      rawNews: selected.map(n => ({ id: n.id, headline: n.headline, category: n.category, impact: n.impact }))
+    };
+
+    renderReport(fullReport);
+    // Save regardless of whether all event batches succeeded
+    try { saveReportToStorage(fullReport); } catch(se) { console.warn('Save failed:', se); }
+
+  } catch(e) {
+    errBox.textContent = '分析錯誤：' + e.message;
+    errBox.classList.add('active');
+    document.getElementById('newsReportArea').innerHTML = '<div class="empty-results"><div class="empty-icon">📊</div>分析失敗，請重試</div>';
+  }
+  setLoading('analyzeBtn', false, '分析選定事件 →');
+}
+
+// ── SAVE TO LOCALSTORAGE ──
+function saveReportToStorage(report) {
+  try {
+    const key = 'news_history';
+    const existing = JSON.parse(localStorage.getItem(key) || '[]');
+    existing.unshift({ ...report, savedAt: new Date().toISOString() });
+    if (existing.length > 30) existing.splice(30);
+    localStorage.setItem(key, JSON.stringify(existing));
+    console.log('Report saved to localStorage');
+  } catch(e) {
+    console.warn('Failed to save report:', e);
+  }
+  // Also sync to Google Sheets
+  appendToSheet(report);
+}
+
+function showReportSkeleton() {
+  let html = '';
+  for (let i = 0; i < 3; i++) {
+    html += `<div class="report-event-block">
+      <div class="skeleton skel-line skel-long" style="margin-bottom:8px"></div>
+      <div class="skeleton skel-line skel-medium" style="margin-bottom:8px"></div>
+      <div class="skeleton skel-line skel-short"></div>
+    </div>`;
+  }
+  document.getElementById('newsReportArea').innerHTML = html;
+}
+
+function renderReport(data) {
+  const events = data.events || [];
+  const summary = data.summary || null;
+  if (!events.length && !summary) {
+    document.getElementById('newsReportArea').innerHTML = '<div class="empty-results"><div class="empty-icon">📊</div>無分析結果</div>';
+    return;
+  }
+
+  const impactColor = { overall_positive: 'var(--accent)', overall_negative: 'var(--red)', mixed: 'var(--amber)' };
+  const impactLabel = { overall_positive: '利多 ▲', overall_negative: '利空 ▼', mixed: '影響混合' };
+  const sentimentColor = { bullish: 'var(--accent)', bearish: 'var(--red)', neutral: 'var(--amber)' };
+  const sentimentLabel = { bullish: '偏多 ▲', bearish: '偏空 ▼', neutral: '中性 ─' };
+  const actionClass = { '持有': 'action-hold', '觀望': 'action-wait', '減碼': 'action-reduce' };
+  const actionIcon = { '持有': '✓', '觀望': '⏸', '減碼': '↓' };
+
+  let html = '<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);margin-bottom:16px;letter-spacing:0.08em">報告日期：' + (data.reportDate || new Date().toLocaleDateString('zh-TW')) + ' · ' + (data.newsCount || events.length) + ' 則事件</div>';
+
+  // ══ SECTION 1: COMPREHENSIVE SUMMARY ══
+  if (summary) {
+    const sc = sentimentColor[summary.overallSentiment] || 'var(--amber)';
+    const sl = sentimentLabel[summary.overallSentiment] || '─';
+    html += '<div style="background:var(--ink);color:var(--bg);border-radius:8px;padding:16px 18px;margin-bottom:20px">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">';
+    html += '<div style="font-family:var(--mono);font-size:10px;letter-spacing:0.12em;color:#888">◈ 綜合研判</div>';
+    html += '<span style="font-family:var(--mono);font-size:11px;padding:3px 10px;border-radius:3px;background:' + sc + '30;color:' + sc + '">' + sl + '</span>';
+    html += '</div>';
+    html += '<div style="font-size:13px;color:#c8c4b8;line-height:1.75;margin-bottom:14px">' + (summary.marketOutlook || '') + '</div>';
+
+    // Winners & Losers in summary
+    const tw = summary.topWinners || [], tl = summary.topLosers || [];
+    if (tw.length || tl.length) {
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">';
+      html += '<div style="background:rgba(45,90,61,0.25);border-radius:6px;padding:10px 12px">';
+      html += '<div style="font-family:var(--mono);font-size:10px;color:#4ade80;margin-bottom:8px">▲ 整體受益</div>';
+      tw.forEach(w => {
+        html += '<div style="margin-bottom:8px"><div style="font-family:var(--mono);font-size:11px;font-weight:500;color:#e8f0ea">' + w.industry + '</div>';
+        html += '<div style="font-size:10px;color:#888;margin:2px 0">' + (w.reason||'') + '</div>';
+        html += '<div style="font-size:11px;color:#4ade80;margin-bottom:2px">' + (w.stocks||[]).join('、') + '</div>';
+        if (w.sourcedFrom) html += '<div style="font-size:10px;color:#4ade8066;font-family:var(--mono)">📎 ' + w.sourcedFrom + '</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+      html += '<div style="background:rgba(163,48,48,0.2);border-radius:6px;padding:10px 12px">';
+      html += '<div style="font-family:var(--mono);font-size:10px;color:#f87171;margin-bottom:8px">▼ 整體受害</div>';
+      tl.forEach(l => {
+        html += '<div style="margin-bottom:8px"><div style="font-family:var(--mono);font-size:11px;font-weight:500;color:#fdf0f0">' + l.industry + '</div>';
+        html += '<div style="font-size:10px;color:#888;margin:2px 0">' + (l.reason||'') + '</div>';
+        html += '<div style="font-size:11px;color:#f87171;margin-bottom:2px">' + (l.stocks||[]).join('、') + '</div>';
+        if (l.sourcedFrom) html += '<div style="font-size:10px;color:#f8717166;font-family:var(--mono)">📎 ' + l.sourcedFrom + '</div>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    }
+
+    // Key actions in summary
+    const ka = summary.keyActions || [];
+    if (ka.length) {
+      ka.forEach(a => {
+        const ac = actionClass[a.type] || 'action-wait';
+        const ai = actionIcon[a.type] || '⏸';
+        const col = a.type==='持有'?'#4ade80':a.type==='減碼'?'#f87171':'#c17d0a';
+        html += '<div style="border-left:2px solid ' + col + ';padding:6px 10px;margin-bottom:6px">';
+        html += '<span style="font-family:var(--mono);font-size:10px;color:' + col + '">' + ai + ' ' + a.type + '｜' + (a.target||'') + '</span>';
+        html += '<div style="font-size:12px;color:#c8c4b8;margin-top:3px">' + (a.reason||'') + '</div>';
+        if (a.sourcedFrom) html += '<div style="font-size:10px;color:#88886666;font-family:var(--mono);margin-top:2px">📎 ' + a.sourcedFrom + '</div>';
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+  }
+
+  // ══ SECTION 2: INDIVIDUAL EVENTS (collapsible) ══
+  if (events.length) {
+    html += '<div style="font-family:var(--mono);font-size:10px;letter-spacing:0.12em;color:var(--ink3);margin-bottom:12px;display:flex;align-items:center;gap:8px">個別事件分析 <span style="flex:1;height:1px;background:var(--rule)"></span></div>';
+
+    events.forEach((ev, idx) => {
+      const ic = impactColor[ev.impact] || 'var(--amber)';
+      const il = impactLabel[ev.impact] || '─';
+      const cardId = 'ev-card-' + idx;
+
+      html += '<div class="report-event-block" style="margin-bottom:8px">';
+      html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;cursor:pointer" onclick="toggleEventCard(\'' + cardId + '\')">';
+      html += '<div style="flex:1;padding-right:8px"><div class="report-event-title">' + (ev.headline||'') + '</div>';
+      html += '<div style="font-size:11px;color:var(--ink3);margin-top:3px">' + (ev.summary||'') + '</div></div>';
+      html += '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">';
+      html += '<span style="font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:3px;background:' + ic + '20;color:' + ic + '">' + il + '</span>';
+      html += '<span style="font-family:var(--mono);font-size:12px;color:var(--ink3)" id="' + cardId + '-arrow">▼</span></div></div>';
+
+      // Collapsible body
+      html += '<div id="' + cardId + '" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--rule2)">';
+      const winners = ev.winners || [], losers = ev.losers || [];
+      if (winners.length || losers.length) {
+        html += '<div class="impact-grid" style="margin-bottom:8px">';
+        html += '<div class="impact-col win"><div class="impact-col-title">▲ 受益</div>';
+        winners.forEach(w => {
+          html += '<div style="margin-bottom:5px"><div style="font-family:var(--mono);font-size:10px;font-weight:500;color:var(--accent)">' + w.industry + '</div>';
+          (w.stocks||[]).forEach(s => { html += '<div class="impact-stock"><span class="impact-stock-name">' + s.name + '</span><span style="font-size:10px;color:var(--ink3);margin-left:5px">' + (s.reason||'') + '</span></div>'; });
+          html += '</div>';
+        });
+        html += '</div><div class="impact-col lose"><div class="impact-col-title">▼ 受害</div>';
+        losers.forEach(l => {
+          html += '<div style="margin-bottom:5px"><div style="font-family:var(--mono);font-size:10px;font-weight:500;color:var(--red)">' + l.industry + '</div>';
+          (l.stocks||[]).forEach(s => { html += '<div class="impact-stock"><span class="impact-stock-name">' + s.name + '</span><span style="font-size:10px;color:var(--ink3);margin-left:5px">' + (s.reason||'') + '</span></div>'; });
+          html += '</div>';
+        });
+        html += '</div></div>';
+      }
+      if (ev.action) {
+        const ac = actionClass[ev.action.type] || 'action-wait';
+        const ai = actionIcon[ev.action.type] || '⏸';
+        html += '<div class="action-box ' + ac + '"><div class="action-label">' + ai + ' ' + ev.action.type + '</div><div class="action-content">' + ev.action.reason + '</div></div>';
+      }
+      html += '</div></div>';
+    });
+  }
+
+  document.getElementById('newsReportArea').innerHTML = html;
+}
+
+function toggleEventCard(id) {
+  const card = document.getElementById(id);
+  const arrow = document.getElementById(id + '-arrow');
+  if (!card) return;
+  const isOpen = card.style.display !== 'none';
+  card.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.textContent = isOpen ? '▼' : '▲';
+}
+
+// ── AUTO REPORT ──
+async function runAutoReport() {
+  const errBox = document.getElementById('newsError');
+  errBox.classList.remove('active');
+  setLoading('autoRunBtn', true, '⚡ 一鍵生成報告');
+
+  const prefs = JSON.parse(localStorage.getItem('news_prefs') || '{}');
+  const holdings = prefs.holdings || '';
+  const count = prefs.count === '5則重點' ? 5 : prefs.count === '全部掃描' ? 10 : 3;
+  const scope = prefs.scope === '只看宏觀' ? '總經政策、地緣政治、央行決策' :
+                prefs.scope === '只看產業' ? '產業事件、企業財報、原物料' :
+                '總經政策、地緣政治、產業事件、企業財報、原物料';
+  const today = new Date().toLocaleDateString('zh-TW');
+  const holdingsPart = holdings ? '優先納入與以下持倉相關的事件：' + holdings + '。' : '';
+
+  const schema = '{"reportDate":"DATE","autoGenerated":true,"events":[{"headline":"真實新聞標題","impact":"overall_positive或overall_negative或mixed","summary":"2句說明","winners":[{"industry":"產業","stocks":[{"name":"個股","reason":"原因"}]}],"losers":[{"industry":"產業","stocks":[{"name":"個股","reason":"原因"}]}],"action":{"type":"持有或觀望或減碼","reason":"1句建議"}}]}';
+  const prompt = '請使用 Google Search 搜尋今日最重要的' + count + '則影響股市的新聞，範圍：' + scope + '。' + holdingsPart + '步驟二：針對這些新聞逐一分析受益受害產業、個股影響、操作建議。只輸出純JSON一行不要markdown，格式：' + schema.replace('DATE', today) + '。每個事件winners和losers各1到2個，summary限30字，reason限15字。';
+
+  showReportSkeleton();
+
+  try {
+    const raw = await callGemini(prompt, 0, 0, true);
+    const parsed = parseJSON(raw);
+    setMode('explore');
+    renderReport(parsed);
+    document.getElementById('newsListArea').innerHTML = '<div style="background:var(--accent-light);border-left:3px solid var(--accent);padding:10px 14px;border-radius:0 4px 4px 0;font-size:12px;color:var(--ink2)"><strong style="color:var(--accent)">⚡ 自動模式</strong>：AI 已自動選取 ' + (parsed.events||[]).length + ' 則重要新聞並完成分析</div>';
+  } catch(e) {
+    errBox.textContent = '自動報告錯誤：' + e.message;
+    errBox.classList.add('active');
+  }
+  setLoading('autoRunBtn', false, '⚡ 一鍵生成報告');
+}
+
+// Load prefs on start
+window.addEventListener('DOMContentLoaded', () => {
+  // Restore API key
+  const savedKey = localStorage.getItem('screener_api_key');
+  if (savedKey) {
+    const inp = document.getElementById('apiKeyInput');
+    if (inp) {
+      inp.value = savedKey;
+      // Trigger status update after DOM is ready
+      setTimeout(() => onApiKeyChange(savedKey), 50);
+    }
+  }
+  // Restore news prefs
+  loadPrefs();
+});
+
+
+
+// ══════════════════════════════════════════
+// GOOGLE SHEETS INTEGRATION
+// ══════════════════════════════════════════
+
+// ── SHEETS CONFIG ──
+// Values below are injected by GitHub Actions from Secrets
+// Fallback to localStorage for local testing
+const _INJECTED_EMAIL = 'investment-screener@investment-screener-498508.iam.gserviceaccount.com';
+const _INJECTED_KEY = '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDPiUiLtHDUvEmf\nwWlt11mZnmgGM+Rjf3hMUs1tKV44Ga2ch67e9z4lvYpS/9EUE3joybcHfU4nb5lT\ndRqcn0eFZfLPNfrPgnQ5VZp+Y/TmNeN1spRaFwd3BMTK8bPbxBNNcp1GIovXbycK\n+N50nBGwUTP1M7+gW/CeK4KRwv6H/IEvC41okIQKELtqpvZOeux0fYu592kthU+T\n8tS9CUgzxD0A2byFjMVCPSy7heqpBMSEGl/qxRqt5VHgLp0xF0wr1dMgW5+b+sBx\nWAz1jqeGMPuNWi5ppu4AkaBwEPK2/N9+TukGkKp1gASlioEeq8HQABO6U/7ENWjb\nbzVFK36hAgMBAAECggEAH4iT/HTjyfx7+/6mzCOdqnZDsbbpG7x5ZQYVzuGAvpRu\n6SrtRVVFh6AnktnqL5s6fWByONHvcerb3gRGkV1a6tLP6cUhbAM92/JSVvmiyJHl\nPZ5vOnW8/Xa83Ls3TAvxr4xb3Oq7MHY5Sp+q1AayDLDMl2llU0fKT+DQ5jXod8p+\nJ2wUhgzzEqa6LKu6eY8LrFCoQStgmMrgsXep9WW8TkG4tI5EGWGi1JJRWpfJGjZZ\nYVO1RXEw5kME4bEP5M/SXnqKuw6/cd6e7jB1iRZaF/6aoX198kqSsRjsinkmo8Co\nmGt1S1jBJmyBoedNw84lmZd649XAnWyllTi8Csz5iwKBgQDvFd42rm1js5rlhArU\nLKIZIkN1bXboPjZtVHn99Qh9dX8q9+iqomeBsxnJamB0GZuEgnhYCZdW8qsSaWhJ\nParXtn9nPjhBljmula06oeuAxE2yW0C4jYpabP/yojYDHuEzY/M9GzisEkOz0huq\ng/oyUBUbFXBnAC8I5x+sHLcy2wKBgQDeOAVrV4U9QLhsv1wlSXaNrSqKURZoI5Lw\nRp5MTA247Fjd7OlkVaqKFbWX8/Q+X+G/SddecLJoKMO6fYqw2N6xslVDcQR3OOY8\nhHnMZ21WzCc7+qopabIk5KIckkiuo9ytgIa0yhjjYovIgmkITewIT2iIFajZtR/b\nH1WIKtcnMwKBgCqR1TgdRKLs9taI9TikHdSl0icVb4eYlC5RTUtXlsRn6FWpQIcp\nVY61ahD/3N6vNI6agH0EcCruGGG13Pi1fzbbasHiRTgAXJLmWarH69vImCD6uIJj\nyU+ieswj78QMeoKg+E1YDHYu5lkdPwnUZ/cPZUKmRZZBZR6LsIr/rerjAoGAXHnB\nv5bvarspRJAp/5Zf0Lu0jVULVxEe0AEDVUr9Fuy8WraBtfB0hPxd0ruB9AcgweMv\nzixmAjScp1ohQlEt85L8KpG4wwiZv6t9qFOOS+WvmiVJdOx4ZyQCVpOFza+BYW6w\nIEJOMypKc4nZvcv3osmw/ZjN6LOYay7SAFWbrcMCgYEAiW96QHlEaGcYKS2GR66Q\nTHO3HwBphzo5MKJo9TG9LJD2ldASYrP1B+8Dsxu1dNXNvXvLxmz6N11ia7o499Gt\no/Ia4SFS2JZn7ueIChWOrGVA65+XfD2YadrSx/vyYjZ4tjNGn0mvNQfgQIg28cDe\nfkwa6eDqkD9EbyXI/961xh4=\n-----END PRIVATE KEY-----\n';
+
+function getSheetsConfig() {
+  // Use injected values if available (GitHub Actions deployment)
+  // Otherwise fall back to localStorage (local testing)
+  const email = (_INJECTED_EMAIL && !_INJECTED_EMAIL.startsWith('INJECT_'))
+    ? _INJECTED_EMAIL
+    : localStorage.getItem('sheets_client_email') || '';
+  const rawKey = (_INJECTED_KEY && !_INJECTED_KEY.startsWith('INJECT_'))
+    ? _INJECTED_KEY
+    : localStorage.getItem('sheets_private_key') || '';
+  const privateKey = rawKey.replace(/\\n/g, '\n');
+  return {
+    spreadsheetId: '1Nw-qGajPuk0UEo6bbFtkOwenzw8JmqVyqkMqcNxlgsc',
+    clientEmail: email,
+    privateKey: privateKey,
+    sheetName: 'Sheet1'
+  };
+}
+const SHEETS_CONFIG = { get privateKey() { return getSheetsConfig().privateKey; } };
+
+async function getAccessToken(cfg) {
+  cfg = cfg || getSheetsConfig();
+  const now = Math.floor(Date.now() / 1000);
+
+  // Proper base64url encode for JWT
+  const enc = new TextEncoder();
+  const b64url = bytes => btoa(Array.from(bytes, b => String.fromCharCode(b)).join(''))
+    .replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+  const b64urlJson = obj => b64url(enc.encode(JSON.stringify(obj)));
+
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const payload = {
+    iss: cfg.clientEmail,
+    scope: 'https://www.googleapis.com/auth/spreadsheets',
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: now + 3600,
+    iat: now
+  };
+
+  const signingInput = b64urlJson(header) + '.' + b64urlJson(payload);
+
+  // Clean up private key - handle all newline formats
+  const pemBody = cfg.privateKey
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/\\n/g, '')
+    .replace(/\r\n/g, '')
+    .replace(/\n/g, '')
+    .replace(/\s/g, '')
+    .trim();
+
+  let keyData;
+  try {
+    keyData = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
+  } catch(e) {
+    throw new Error('Private key base64 decode failed: ' + e.message + ' (key length: ' + pemBody.length + ')');
+  }
+
+  const cryptoKey = await crypto.subtle.importKey(
+    'pkcs8', keyData.buffer,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false, ['sign']
+  );
+
+  const signatureBuffer = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5', cryptoKey, enc.encode(signingInput)
+  );
+
+  // Fix: avoid spread operator on large buffers (call stack overflow)
+  const sigBytes = new Uint8Array(signatureBuffer);
+  const signature = b64url(sigBytes);
+  const jwt = signingInput + '.' + signature;
+
+  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=' + jwt
+  });
+  const tokenData = await tokenRes.json();
+  if (!tokenData.access_token) {
+    throw new Error('Google token error: ' + JSON.stringify(tokenData));
+  }
+  return tokenData.access_token;
+}
+
+async function appendToSheet(report) {
+  const cfg = getSheetsConfig();
+  if (!cfg.clientEmail || !cfg.privateKey) {
+    console.log('Sheets not configured, skipping sync');
+    showSheetSyncStatus('⚠ 尚未設定 Google Sheets 憑證');
+    return;
+  }
+  console.log('Starting Sheets sync, email:', cfg.clientEmail.slice(0,20) + '...');
+  try {
+    const token = await getAccessToken(cfg);
+    console.log('Token obtained OK');
+    const summary = report.summary || {};
+    const winners = (summary.topWinners || []).map(w => w.industry).join('、');
+    const losers = (summary.topLosers || []).map(l => l.industry).join('、');
+    const now = new Date();
+    const row = [
+      now.toLocaleDateString('zh-TW'),
+      now.toLocaleTimeString('zh-TW'),
+      report.newsCount || (report.events||[]).length,
+      summary.overallSentiment || '',
+      summary.marketOutlook || '',
+      winners,
+      losers,
+      JSON.stringify(report).slice(0, 4000)
+    ];
+
+    const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SHEETS_CONFIG.spreadsheetId +
+      '/values/' + encodeURIComponent(SHEETS_CONFIG.sheetName) + '!A1:append?valueInputOption=USER_ENTERED';
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: [row] })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || 'Sheets write failed');
+    }
+    console.log('✓ Report saved to Google Sheets');
+    showSheetSyncStatus('✓ 已同步到 Google Sheets');
+  } catch(e) {
+    console.error('Sheets sync failed:', e);
+    showSheetSyncStatus('⚠ Sheets 同步失敗：' + e.message);
+  }
+}
+
+function showSheetSyncStatus(msg) {
+  let el = document.getElementById('sheetSyncStatus');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'sheetSyncStatus';
+    el.style.cssText = 'font-family:var(--mono);font-size:10px;color:var(--ink3);margin-top:8px;padding:6px 10px;border-radius:4px;background:var(--accent-light)';
+    const area = document.getElementById('newsReportArea');
+    if (area) area.parentNode.insertBefore(el, area);
+  }
+  el.textContent = msg;
+  setTimeout(() => { if (el) el.textContent = ''; }, 5000);
+}
+
+// ── GEMINI CALL ──
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function callGemini(prompt, modelIndex, retryCount, useSearch) {
+  const key = getApiKey();
+  if (!key || key.length < 10) throw new Error('請先設定 Gemini API Key');
+  const models = [
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite',
+    'gemini-2.5-pro'
+  ];
+  const idx = modelIndex || 0;
+  const retry = retryCount || 0;
+  const model = models[idx];
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + key;
+
+  const body = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.3, maxOutputTokens: 8192 }
+  };
+
+  // Enable Google Search grounding for news scanning
+  if (useSearch) {
+    body.tools = [{ google_search: {} }];
+  }
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+
+  if (!res.ok) {
+    const msg = data.error?.message || '';
+    const isOverload = msg.includes('high demand') || msg.includes('overloaded') || res.status === 503 || res.status === 429;
+
+    if (isOverload) {
+      // Retry same model up to 2 times with delay
+      if (retry < 2) {
+        const waitSec = (retry + 1) * 3;
+        console.log('Rate limited on ' + model + ', retrying in ' + waitSec + 's...');
+        await sleep(waitSec * 1000);
+        return callGemini(prompt, idx, retry + 1, useSearch);
+      }
+      // Then try next model
+      if (idx < models.length - 1) {
+        console.log('Switching to fallback model: ' + models[idx+1]);
+        await sleep(2000);
+        return callGemini(prompt, idx + 1, 0, useSearch);
+      }
+      throw new Error('所有模型目前都過載，請等 1 分鐘後再試');
+    }
+    throw new Error(msg || 'HTTP ' + res.status);
+  }
+  if (!data.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error('回應格式異常');
+  return data.candidates[0].content.parts[0].text;
+}
+
+function parseJSON(raw) {
+  // Show debug
+  const dbg = document.getElementById('debugBox');
+  if (dbg) { dbg.style.display = 'block'; dbg.textContent = 'RAW RESPONSE:\n' + raw.slice(0, 500); }
+
+  // Strip markdown fences
+  let clean = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+
+  // Find outermost { }
+  const start = clean.indexOf('{');
+  const end = clean.lastIndexOf('}');
+  if (start === -1 || end === -1) throw new Error('找不到 JSON 大括號');
+  clean = clean.slice(start, end + 1);
+
+  // Try direct parse
+  try {
+    return JSON.parse(clean);
+  } catch(e1) {
+    // Try fixing common issues: trailing commas, unescaped newlines
+    let fixed = clean
+      .replace(/,\s*([}\]])/g, '$1')   // trailing commas
+      .replace(/\n/g, ' ')              // literal newlines in strings
+      .replace(/\r/g, '');
+    try {
+      return JSON.parse(fixed);
+    } catch(e2) {
+      if (dbg) dbg.textContent += '\n\nCLEAN ATTEMPT:\n' + clean.slice(0, 500);
+      throw new Error('JSON解析失敗：' + e2.message + '（位置附近：' + clean.slice(300, 330) + '）');
+    }
+  }
+}
+
+function setLoading(btnId, loading, label) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.textContent = loading ? '⏳ 分析中...' : label;
+}
+
+// ── PAGE SWITCH ──
+function switchPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const page = document.getElementById('page-' + name);
+  if (page) page.classList.add('active');
+  if (el) el.classList.add('active');
+}
+
+// ── MARKET TOGGLE ──
+let currentMarket = 'both';
+function setMarket(m) {
+  currentMarket = m;
+  ['both','tw','us'].forEach(k => document.getElementById('tab-' + k).classList.toggle('active', k === m));
+  document.getElementById('tw-section').style.display = m === 'us' ? 'none' : 'block';
+  document.getElementById('us-section').style.display = m === 'tw' ? 'none' : 'block';
+}
+
+// ── EDITABLE VALUES ──
+function editVal(el) {
+  el.contentEditable = 'true'; el.classList.add('editing'); el.focus();
+  const range = document.createRange(); range.selectNodeContents(el);
+  window.getSelection().removeAllRanges(); window.getSelection().addRange(range);
+  el.onblur = () => { el.contentEditable = 'false'; el.classList.remove('editing'); };
+  el.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } };
+}
+
+// ── TAG TOGGLE ──
+function toggleTag(el, groupId) { el.classList.toggle('active'); }
+function getActiveTags(groupId) {
+  return Array.from(document.querySelectorAll(`#${groupId} .tag-btn.active`)).map(b => b.textContent.trim());
+}
+
+// ── SCREENER ──
+function getCriteria() {
+  const vals = (section) => Array.from(document.querySelectorAll(`#${section}-section .criteria-row`))
+    .map(r => `${r.querySelector('.criteria-label').textContent.trim()}：${r.querySelector('.criteria-val').textContent.trim()}`).join('、');
+  return { tw: vals('tw'), us: vals('us') };
+}
+
+async function runScreener() {
+  const errBox = document.getElementById('screenerError');
+  errBox.classList.remove('active');
+  setLoading('screenerRunBtn', true, '▶ 執行篩選');
+
+  const c = getCriteria();
+  const extra = document.getElementById('extraCriteria').value.trim();
+  const twCount = currentMarket === 'us' ? 0 : 3;
+  const usCount = currentMarket === 'tw' ? 0 : 3;
+  const twPart = twCount > 0 ? `\n【台股條件】${c.tw}。篩出${twCount}檔。` : '';
+  const usPart = usCount > 0 ? `\n【美股條件】${c.us}。篩出${usCount}檔。` : '';
+  const extraPart = extra ? `\n【額外條件】${extra}` : '';
+
+  const twArr = twCount > 0 ? '[FILL_TW_STOCKS]' : '[]';
+  const usArr = usCount > 0 ? '[FILL_US_STOCKS]' : '[]';
+
+  const stockSchema = `{"ticker":"股號 名稱","industry":"產業","type":"value","typeLabel":"深度價值","metrics":[{"label":"P/B","value":"1.2x"}],"desc":"兩句分析","risk":"一句風險","scores":{"value":75,"growth":60,"safety":80}}`;
+
+  const prompt = `你是價值投資分析師。${twPart}${usPart}${extraPart}
+選股原則：分析師覆蓋率低、散戶未發現、護城河清晰、避開題材炒作。
+
+只輸出一行純JSON，禁止markdown和換行：
+{"summary":"一句摘要","tw":[${twCount > 0 ? `${twCount}個物件，每個格式：${stockSchema}` : ''}],"us":[${usCount > 0 ? `${usCount}個物件，每個格式：${stockSchema}` : ''}]}
+
+每個stock的desc限20字內，risk限15字內，metrics只放3個指標。`;
+
+  try {
+    const raw = await callGemini(prompt);
+    const parsed = parseJSON(raw);
+    const dbg = document.getElementById('debugBox');
+    if (dbg) dbg.style.display = 'none';
+    if (!parsed.tw) parsed.tw = [];
+    if (!parsed.us) parsed.us = [];
+    const sum = document.getElementById('screenerSummary');
+    if (parsed.summary) { sum.textContent = '📊 ' + parsed.summary; sum.classList.add('active'); }
+    else sum.classList.remove('active');
+    renderStockCards(parsed.tw, parsed.us);
+  } catch(e) {
+    errBox.textContent = `錯誤：${e.message}`;
+    errBox.classList.add('active');
+  }
+  setLoading('screenerRunBtn', false, '▶ 執行篩選');
+}
+
+function renderStockCards(tw, us) {
+  const area = document.getElementById('screenerResults');
+  let html = '';
+  if (tw.length > 0) { html += `<div class="result-section-title">🇹🇼 台股候選（${tw.length}檔）</div>`; html += tw.map(stockCard).join(''); }
+  if (us.length > 0) { html += `<div class="result-section-title" style="margin-top:18px">🇺🇸 美股候選（${us.length}檔）</div>`; html += us.map(stockCard).join(''); }
+  if (!html) html = '<div class="empty-results"><div class="empty-icon">◈</div>沒有找到結果</div>';
+  area.innerHTML = html;
+}
+
+function stockCard(s) {
+  const bc = s.type === 'value' ? 'badge-value' : s.type === 'growth' ? 'badge-growth' : 'badge-recovery';
+  const metrics = (s.metrics||[]).map(m => `<span class="metric-tag">${m.label} <span>${m.value}</span></span>`).join('');
+  const sc = s.scores||{};
+  const bars = [{n:'估值',v:sc.value||50,c:'#2d5a3d'},{n:'成長',v:sc.growth||50,c:'#2a4a8a'},{n:'安全',v:sc.safety||50,c:'#c17d0a'}]
+    .map(b => `<div class="score-item"><div class="score-name">${b.n}</div><div class="score-track"><div class="score-fill" style="width:${b.v}%;background:${b.c}"></div></div><div class="score-num">${b.v}</div></div>`).join('');
+  return `<div class="stock-card"><div class="card-top"><div><div class="ticker-sym">${s.ticker||''}</div><div class="ticker-ind">${s.industry||''}</div></div><span class="badge ${bc}">${s.typeLabel||s.type||''}</span></div><div class="metrics-row">${metrics}</div><div class="card-desc">${s.desc||''}</div><div class="card-risk">⚠ ${s.risk||''}</div><div class="score-row">${bars}</div></div>`;
+}
+
+// ── EVENT ANALYSIS ──
+async function runEventAnalysis() {
+  const title = document.getElementById('eventTitle').value.trim();
+  if (!title) { alert('請先輸入事件標題'); return; }
+  const errBox = document.getElementById('eventError');
+  errBox.classList.remove('active');
+  setLoading('eventRunBtn', true, '▶ 執行事件分析');
+
+  const types = getActiveTags('eventTypeGroup');
+  const markets = getActiveTags('marketGroup');
+  const focuses = getActiveTags('focusGroup');
+  const detail = document.getElementById('eventDetail').value.trim();
+  const wantWin = focuses.includes('受益產業 + 個股');
+  const wantLose = focuses.includes('受害產業 + 個股');
+  const wantHistory = focuses.includes('歷史類似事件');
+  const wantAction = focuses.includes('操作建議');
+
+  const winnersEx = wantWin ? `,"winners":[{"industry":"半導體","reason":"降息降低資金成本有利擴產","stocks":[{"name":"台積電","reason":"受益資本支出擴張"},{"name":"AMD","reason":"估值重新定價"}]}]` : `,"winners":[]`;
+  const losersEx = wantLose ? `,"losers":[{"industry":"銀行","reason":"降息壓縮利差影響獲利","stocks":[{"name":"摩根大通","reason":"淨利息收入下降"},{"name":"國泰金","reason":"利差收窄"}]}]` : `,"losers":[]`;
+  const historyEx = wantHistory ? `,"history":[{"event":"2019年Fed三次預防性降息","year":"2019","outcome":"標普500全年上漲28%，科技股領漲，債券同步上漲"}]` : `,"history":[]`;
+  const actionsEx = wantAction ? `,"actions":[{"type":"持有","target":"科技股、成長股","reason":"降息環境有利高本益比成長股重新估值。建議持有優質科技股不輕易出場。"},{"type":"觀望","target":"金融股","reason":"利差收窄短期影響獲利能見度。待財報確認影響幅度後再決定是否調整部位。"}]` : `,"actions":[]`;
+
+  const prompt = `你是專業的宏觀投資分析師。請分析以下國際事件對股市的影響：
+
+事件：${title}
+事件類型：${types.join('、')}
+影響市場：${markets.join('、')}${detail ? '\n補充說明：' + detail : ''}
+
+【極重要】只輸出純JSON一行，不要任何說明文字、不要markdown、不要換行符號。完全依照下方範例結構輸出，只替換裡面的數值：
+{"eventTitle":"${title}","summary":"事件背景2到3句摘要","impact":"overall_positive或overall_negative或mixed"${winnersEx}${losersEx}${historyEx}${actionsEx}}
+
+winners和losers各3個產業，每個產業2到3支個股。history提供2個案例。actions提供2到3條建議。`;
+
+  try {
+    const raw = await callGemini(prompt);
+    const parsed = parseJSON(raw);
+    renderEventReport(parsed);
+  } catch(e) {
+    errBox.textContent = `錯誤：${e.message}`;
+    errBox.classList.add('active');
+  }
+  setLoading('eventRunBtn', false, '▶ 執行事件分析');
+}
+
+function renderEventReport(d) {
+  const area = document.getElementById('eventResults');
+  let html = '';
+  if (d.summary) {
+    const impactColor = d.impact === 'overall_positive' ? 'var(--accent)' : d.impact === 'overall_negative' ? 'var(--red)' : 'var(--amber)';
+    const impactLabel = d.impact === 'overall_positive' ? '整體正面' : d.impact === 'overall_negative' ? '整體負面' : '影響混合';
+    html += `<div class="event-impact-card"><div class="event-card-title"><span style="color:${impactColor}">● ${impactLabel}</span>&nbsp;│&nbsp;${d.eventTitle||'事件分析'}</div><div class="card-desc" style="font-size:13px">${d.summary}</div></div>`;
+  }
+  const winners = d.winners || [], losers = d.losers || [];
+  if (winners.length > 0 || losers.length > 0) {
+    html += `<div class="result-section-title">受益 vs 受害產業</div><div class="impact-grid">`;
+    html += `<div class="impact-col win"><div class="impact-col-title">▲ 受益產業</div>`;
+    winners.forEach(w => {
+      html += `<div style="margin-bottom:10px"><div style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--accent);margin-bottom:4px">${w.industry}</div><div style="font-size:11px;color:var(--ink3);margin-bottom:4px">${w.reason||''}</div>`;
+      (w.stocks||[]).forEach(s => { html += `<div class="impact-stock"><span class="impact-stock-name">${s.name}</span><span style="font-size:11px;color:var(--ink3);margin-left:6px">${s.reason||''}</span></div>`; });
+      html += `</div>`;
+    });
+    html += `</div><div class="impact-col lose"><div class="impact-col-title">▼ 受害產業</div>`;
+    losers.forEach(l => {
+      html += `<div style="margin-bottom:10px"><div style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--red);margin-bottom:4px">${l.industry}</div><div style="font-size:11px;color:var(--ink3);margin-bottom:4px">${l.reason||''}</div>`;
+      (l.stocks||[]).forEach(s => { html += `<div class="impact-stock"><span class="impact-stock-name">${s.name}</span><span style="font-size:11px;color:var(--ink3);margin-left:6px">${s.reason||''}</span></div>`; });
+      html += `</div>`;
+    });
+    html += `</div></div>`;
+  }
+  const history = d.history || [];
+  if (history.length > 0) {
+    html += `<div class="result-section-title" style="margin-top:18px">歷史類似事件參考</div>`;
+    history.forEach(h => { html += `<div class="history-box"><div class="history-title">📅 ${h.event}（${h.year}）</div><div class="history-content">${h.outcome}</div></div>`; });
+  }
+  const actions = d.actions || [];
+  if (actions.length > 0) {
+    html += `<div class="result-section-title" style="margin-top:18px">操作建議</div>`;
+    actions.forEach(a => {
+      const cls = a.type === '持有' ? 'action-hold' : a.type === '減碼' ? 'action-reduce' : 'action-wait';
+      const icon = a.type === '持有' ? '✓' : a.type === '減碼' ? '↓' : '⏸';
+      html += `<div class="action-box ${cls}"><div class="action-label">${icon} ${a.type}｜${a.target||''}</div><div class="action-content">${a.reason}</div></div>`;
+    });
+  }
+  if (!html) html = '<div class="empty-results"><div class="empty-icon">🌐</div>沒有找到結果</div>';
+  area.innerHTML = html;
+}
+</script>
+</body>
+</html>
