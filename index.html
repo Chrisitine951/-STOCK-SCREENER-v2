@@ -1115,6 +1115,7 @@ async function appendToSheet(report) {
   try {
     const token = await getAccessToken(cfg);
     console.log('Token obtained OK');
+    console.log('Appending to sheet:', cfg.spreadsheetId, '/', cfg.sheetName);
     const summary = report.summary || {};
     const winners = (summary.topWinners || []).map(w => w.industry).join('、');
     const losers = (summary.topLosers || []).map(l => l.industry).join('、');
@@ -1130,8 +1131,8 @@ async function appendToSheet(report) {
       JSON.stringify(report).slice(0, 4000)
     ];
 
-    const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SHEETS_CONFIG.spreadsheetId +
-      '/values/' + encodeURIComponent(SHEETS_CONFIG.sheetName) + '!A1:append?valueInputOption=USER_ENTERED';
+    const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + cfg.spreadsheetId +
+      '/values/' + encodeURIComponent(cfg.sheetName) + '!A1:append?valueInputOption=USER_ENTERED';
 
     const res = await fetch(url, {
       method: 'POST',
