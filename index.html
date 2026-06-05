@@ -458,6 +458,15 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
           <div class="sidebar-section-title">我的持倉（AI 優先分析相關新聞）</div>
           <textarea class="text-input" id="myHoldings" rows="3" placeholder="例如：台積電、聯發科、NVDA、AAPL..."></textarea>
           <button class="save-pref-btn" onclick="savePrefs()">💾 儲存偏好設定</button>
+
+        <div class="sidebar-section" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--rule)">
+          <div class="sidebar-section-title">Google Sheets 同步憑證</div>
+          <div style="font-size:11px;color:var(--ink3);margin-bottom:8px">填入後自動儲存，分析完成後同步記錄</div>
+          <input class="text-input" id="sheetsEmailInput" placeholder="client_email（...iam.gserviceaccount.com）" style="margin-bottom:6px;font-size:11px" />
+          <textarea class="text-input" id="sheetsKeyInput" rows="3" placeholder="private_key（-----BEGIN PRIVATE KEY-----...）" style="font-size:10px;margin-bottom:6px"></textarea>
+          <button class="save-pref-btn" onclick="saveSheetsCreds()">🔐 儲存憑證（僅存於本機）</button>
+          <div id="sheetsCredsStatus" style="font-family:var(--mono);font-size:10px;color:var(--ink3);margin-top:6px"></div>
+        </div>
         </div>
 
         <button class="gen-btn" id="autoRunBtn" onclick="runAutoReport()">⚡ 一鍵生成報告</button>
@@ -565,6 +574,30 @@ function loadPrefs() {
     if (savedPrefs.count) document.getElementById('autoCount').value = savedPrefs.count;
     if (savedPrefs.scope) document.getElementById('autoScope').value = savedPrefs.scope;
   }
+  // Restore sheets creds
+  const email = localStorage.getItem('sheets_client_email');
+  const key = localStorage.getItem('sheets_private_key');
+  const emailEl = document.getElementById('sheetsEmailInput');
+  const keyEl = document.getElementById('sheetsKeyInput');
+  if (email && emailEl) emailEl.value = email;
+  if (key && keyEl) keyEl.value = key;
+  if (email && key) updateSheetStatus('✓ 憑證已設定，分析完成後將自動同步', true);
+}
+
+function saveSheetsCreds() {
+  const email = document.getElementById('sheetsEmailInput')?.value.trim();
+  const key = document.getElementById('sheetsKeyInput')?.value.trim();
+  if (!email || !key) { updateSheetStatus('請填入 email 和 private key'); return; }
+  if (!email.includes('iam.gserviceaccount.com')) { updateSheetStatus('email 格式有誤'); return; }
+  if (!key.includes('BEGIN PRIVATE KEY')) { updateSheetStatus('private key 格式有誤'); return; }
+  localStorage.setItem('sheets_client_email', email);
+  localStorage.setItem('sheets_private_key', key);
+  updateSheetStatus('✓ 憑證已儲存！下次分析完成後將同步到 Google Sheets', true);
+}
+
+function updateSheetStatus(msg, ok) {
+  const el = document.getElementById('sheetsCredsStatus');
+  if (el) { el.textContent = msg; el.style.color = ok ? 'var(--accent)' : 'var(--red)'; }
 }
 
 // ── SCAN NEWS ──
@@ -697,8 +730,11 @@ async function analyzeSelected() {
   showReportSkeleton();
 
   // ── 步驟一：綜合摘要（較短，不容易截斷）──
-  const summarySchema = '{"reportDate":"DATE","overallSentiment":"bullish或bearish或neutral","marketOutlook":"整體研判","topWinners":[{"industry":"產業","stocks":["個股"],"reason":"原因"}],"topLosers":[{"industry":"產業","stocks":["個股"],"reason":"原因"}],"keyActions":[{"type":"持有或觀望或減碼","target":"對象","reason":"建議"}]}';
-  const summaryPrompt = '以下是' + selected.length + '則重要新聞：' + headlineList + '。綜合分析對' + markets.join('、') + '股市整體影響。只輸出純JSON一行不要markdown，格式：' + summarySchema.replace('DATE', today) + '。嚴格限制：topWinners只要2個、topLosers只要2個、keyActions只要2條、每個stocks陣列最多2支、reason最多8字、marketOutlook最多30字。';
+  const holdings = JSON.parse(localStorage.getItem('news_prefs') || '{}').holdings || '';
+  const holdingsHint = holdings ? '（特別注意與以下持倉的關聯：' + holdings + '）' : '';
+  const summarySchema = '{"reportDate":"DATE","overallSentiment":"bullish或bearish或neutral","marketOutlook":"整體研判","topWinners":[{"industry":"產業","stocks":["個股"],"reason":"原因","sourcedFrom":"來自第幾則新聞，例如：第1則"}],"topLosers":[{"industry":"產業","stocks":["個股"],"reason":"原因","sourcedFrom":"來自第幾則新聞"}],"keyActions":[{"type":"持有或觀望或減碼","target":"對象","reason":"建議","sourcedFrom":"依據第幾則新聞"}]}';
+  const numberedHeadlines = selected.map((n,i) => '第' + (i+1) + '則：' + n.headline).join('；');
+  const summaryPrompt = '以下是編號過的' + selected.length + '則新聞：' + numberedHeadlines + '。請只根據這些新聞的實際內容，推導出哪些產業受益、哪些受害，每個結論必須在sourcedFrom標明來自第幾則新聞作為依據。若找不到支持某產業受益或受害的新聞，就不要列出該產業。只輸出純JSON一行不要markdown，格式：' + summarySchema.replace('DATE', today) + '。嚴格限制：topWinners最多2個、topLosers最多2個、keyActions最多2條、stocks各1支、reason最多10字、marketOutlook最多30字。';
 
   // ── 步驟二：個別事件分析（每次只分析2則，分批處理）──
   const eventSchema = '{"headline":"標題","impact":"overall_positive或overall_negative或mixed","summary":"1句說明","winners":[{"industry":"產業","stocks":[{"name":"個股","reason":"原因"}]}],"losers":[{"industry":"產業","stocks":[{"name":"個股","reason":"原因"}]}],"action":{"type":"持有或觀望或減碼","reason":"1句"}}';
@@ -823,17 +859,21 @@ function renderReport(data) {
       html += '<div style="background:rgba(45,90,61,0.25);border-radius:6px;padding:10px 12px">';
       html += '<div style="font-family:var(--mono);font-size:10px;color:#4ade80;margin-bottom:8px">▲ 整體受益</div>';
       tw.forEach(w => {
-        html += '<div style="margin-bottom:6px"><div style="font-family:var(--mono);font-size:11px;font-weight:500;color:#e8f0ea">' + w.industry + '</div>';
+        html += '<div style="margin-bottom:8px"><div style="font-family:var(--mono);font-size:11px;font-weight:500;color:#e8f0ea">' + w.industry + '</div>';
         html += '<div style="font-size:10px;color:#888;margin:2px 0">' + (w.reason||'') + '</div>';
-        html += '<div style="font-size:11px;color:#4ade80">' + (w.stocks||[]).join('、') + '</div></div>';
+        html += '<div style="font-size:11px;color:#4ade80;margin-bottom:2px">' + (w.stocks||[]).join('、') + '</div>';
+        if (w.sourcedFrom) html += '<div style="font-size:10px;color:#4ade8066;font-family:var(--mono)">📎 ' + w.sourcedFrom + '</div>';
+        html += '</div>';
       });
       html += '</div>';
       html += '<div style="background:rgba(163,48,48,0.2);border-radius:6px;padding:10px 12px">';
       html += '<div style="font-family:var(--mono);font-size:10px;color:#f87171;margin-bottom:8px">▼ 整體受害</div>';
       tl.forEach(l => {
-        html += '<div style="margin-bottom:6px"><div style="font-family:var(--mono);font-size:11px;font-weight:500;color:#fdf0f0">' + l.industry + '</div>';
+        html += '<div style="margin-bottom:8px"><div style="font-family:var(--mono);font-size:11px;font-weight:500;color:#fdf0f0">' + l.industry + '</div>';
         html += '<div style="font-size:10px;color:#888;margin:2px 0">' + (l.reason||'') + '</div>';
-        html += '<div style="font-size:11px;color:#f87171">' + (l.stocks||[]).join('、') + '</div></div>';
+        html += '<div style="font-size:11px;color:#f87171;margin-bottom:2px">' + (l.stocks||[]).join('、') + '</div>';
+        if (l.sourcedFrom) html += '<div style="font-size:10px;color:#f8717166;font-family:var(--mono)">📎 ' + l.sourcedFrom + '</div>';
+        html += '</div>';
       });
       html += '</div></div>';
     }
@@ -844,9 +884,12 @@ function renderReport(data) {
       ka.forEach(a => {
         const ac = actionClass[a.type] || 'action-wait';
         const ai = actionIcon[a.type] || '⏸';
-        html += '<div style="border-left:2px solid ' + (a.type==='持有'?'#4ade80':a.type==='減碼'?'#f87171':'#c17d0a') + ';padding:6px 10px;margin-bottom:6px">';
-        html += '<span style="font-family:var(--mono);font-size:10px;color:' + (a.type==='持有'?'#4ade80':a.type==='減碼'?'#f87171':'#c17d0a') + '">' + ai + ' ' + a.type + '｜' + (a.target||'') + '</span>';
-        html += '<div style="font-size:12px;color:#c8c4b8;margin-top:3px">' + (a.reason||'') + '</div></div>';
+        const col = a.type==='持有'?'#4ade80':a.type==='減碼'?'#f87171':'#c17d0a';
+        html += '<div style="border-left:2px solid ' + col + ';padding:6px 10px;margin-bottom:6px">';
+        html += '<span style="font-family:var(--mono);font-size:10px;color:' + col + '">' + ai + ' ' + a.type + '｜' + (a.target||'') + '</span>';
+        html += '<div style="font-size:12px;color:#c8c4b8;margin-top:3px">' + (a.reason||'') + '</div>';
+        if (a.sourcedFrom) html += '<div style="font-size:10px;color:#88886666;font-family:var(--mono);margin-top:2px">📎 ' + a.sourcedFrom + '</div>';
+        html += '</div>';
       });
     }
     html += '</div>';
@@ -964,50 +1007,68 @@ window.addEventListener('DOMContentLoaded', () => {
 // GOOGLE SHEETS INTEGRATION
 // ══════════════════════════════════════════
 
-// ── FILL IN YOUR CREDENTIALS HERE ──
-const SHEETS_CONFIG = {
-  spreadsheetId: '1Nw-qGajPuk0UEo6bbFtkOwenzw8JmqVyqkMqcNxlgsc',
-  clientEmail: 'investment-screener@investment-screener-498508.iam.gserviceaccount.com',   // <-- 填入 client_email
-  privateKey: '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDPiUiLtHDUvEmf\nwWlt11mZnmgGM+Rjf3hMUs1tKV44Ga2ch67e9z4lvYpS/9EUE3joybcHfU4nb5lT\ndRqcn0eFZfLPNfrPgnQ5VZp+Y/TmNeN1spRaFwd3BMTK8bPbxBNNcp1GIovXbycK\n+N50nBGwUTP1M7+gW/CeK4KRwv6H/IEvC41okIQKELtqpvZOeux0fYu592kthU+T\n8tS9CUgzxD0A2byFjMVCPSy7heqpBMSEGl/qxRqt5VHgLp0xF0wr1dMgW5+b+sBx\nWAz1jqeGMPuNWi5ppu4AkaBwEPK2/N9+TukGkKp1gASlioEeq8HQABO6U/7ENWjb\nbzVFK36hAgMBAAECggEAH4iT/HTjyfx7+/6mzCOdqnZDsbbpG7x5ZQYVzuGAvpRu\n6SrtRVVFh6AnktnqL5s6fWByONHvcerb3gRGkV1a6tLP6cUhbAM92/JSVvmiyJHl\nPZ5vOnW8/Xa83Ls3TAvxr4xb3Oq7MHY5Sp+q1AayDLDMl2llU0fKT+DQ5jXod8p+\nJ2wUhgzzEqa6LKu6eY8LrFCoQStgmMrgsXep9WW8TkG4tI5EGWGi1JJRWpfJGjZZ\nYVO1RXEw5kME4bEP5M/SXnqKuw6/cd6e7jB1iRZaF/6aoX198kqSsRjsinkmo8Co\nmGt1S1jBJmyBoedNw84lmZd649XAnWyllTi8Csz5iwKBgQDvFd42rm1js5rlhArU\nLKIZIkN1bXboPjZtVHn99Qh9dX8q9+iqomeBsxnJamB0GZuEgnhYCZdW8qsSaWhJ\nParXtn9nPjhBljmula06oeuAxE2yW0C4jYpabP/yojYDHuEzY/M9GzisEkOz0huq\ng/oyUBUbFXBnAC8I5x+sHLcy2wKBgQDeOAVrV4U9QLhsv1wlSXaNrSqKURZoI5Lw\nRp5MTA247Fjd7OlkVaqKFbWX8/Q+X+G/SddecLJoKMO6fYqw2N6xslVDcQR3OOY8\nhHnMZ21WzCc7+qopabIk5KIckkiuo9ytgIa0yhjjYovIgmkITewIT2iIFajZtR/b\nH1WIKtcnMwKBgCqR1TgdRKLs9taI9TikHdSl0icVb4eYlC5RTUtXlsRn6FWpQIcp\nVY61ahD/3N6vNI6agH0EcCruGGG13Pi1fzbbasHiRTgAXJLmWarH69vImCD6uIJj\nyU+ieswj78QMeoKg+E1YDHYu5lkdPwnUZ/cPZUKmRZZBZR6LsIr/rerjAoGAXHnB\nv5bvarspRJAp/5Zf0Lu0jVULVxEe0AEDVUr9Fuy8WraBtfB0hPxd0ruB9AcgweMv\nzixmAjScp1ohQlEt85L8KpG4wwiZv6t9qFOOS+WvmiVJdOx4ZyQCVpOFza+BYW6w\nIEJOMypKc4nZvcv3osmw/ZjN6LOYay7SAFWbrcMCgYEAiW96QHlEaGcYKS2GR66Q\nTHO3HwBphzo5MKJo9TG9LJD2ldASYrP1B+8Dsxu1dNXNvXvLxmz6N11ia7o499Gt\no/Ia4SFS2JZn7ueIChWOrGVA65+XfD2YadrSx/vyYjZ4tjNGn0mvNQfgQIg28cDe\nfkwa6eDqkD9EbyXI/961xh4=\n-----END PRIVATE KEY-----\n',     // <-- 填入 private_key（整段含 \n）
-  sheetName: 'Sheet1'
-};
+// ── SHEETS CONFIG (loaded from localStorage) ──
+function getSheetsConfig() {
+  return {
+    spreadsheetId: '1Nw-qGajPuk0UEo6bbFtkOwenzw8JmqVyqkMqcNxlgsc',
+    clientEmail: localStorage.getItem('sheets_client_email') || '',
+    privateKey: (localStorage.getItem('sheets_private_key') || '').replace(/\\n/g, '\n'),
+    sheetName: 'Sheet1'
+  };
+}
+const SHEETS_CONFIG = { get privateKey() { return getSheetsConfig().privateKey; } };
 
-async function getAccessToken() {
+async function getAccessToken(cfg) {
+  cfg = cfg || getSheetsConfig();
   const now = Math.floor(Date.now() / 1000);
+
+  // Proper base64url encode for JWT
+  const enc = new TextEncoder();
+  const b64url = bytes => btoa(Array.from(bytes, b => String.fromCharCode(b)).join(''))
+    .replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+  const b64urlJson = obj => b64url(enc.encode(JSON.stringify(obj)));
+
   const header = { alg: 'RS256', typ: 'JWT' };
   const payload = {
-    iss: SHEETS_CONFIG.clientEmail,
+    iss: cfg.clientEmail,
     scope: 'https://www.googleapis.com/auth/spreadsheets',
     aud: 'https://oauth2.googleapis.com/token',
     exp: now + 3600,
     iat: now
   };
 
-  const b64 = obj => btoa(JSON.stringify(obj)).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
-  const signingInput = b64(header) + '.' + b64(payload);
+  const signingInput = b64urlJson(header) + '.' + b64urlJson(payload);
 
-  // Import private key
-  const pemBody = SHEETS_CONFIG.privateKey
-    .replace('-----BEGIN PRIVATE KEY-----', '')
-    .replace('-----END PRIVATE KEY-----', '')
+  // Clean up private key - handle all newline formats
+  const pemBody = cfg.privateKey
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
     .replace(/\\n/g, '')
+    .replace(/\r\n/g, '')
     .replace(/\n/g, '')
+    .replace(/\s/g, '')
     .trim();
 
-  const keyData = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
+  let keyData;
+  try {
+    keyData = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
+  } catch(e) {
+    throw new Error('Private key base64 decode failed: ' + e.message + ' (key length: ' + pemBody.length + ')');
+  }
+
   const cryptoKey = await crypto.subtle.importKey(
     'pkcs8', keyData.buffer,
     { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
     false, ['sign']
   );
 
-  const encoder = new TextEncoder();
   const signatureBuffer = await crypto.subtle.sign(
-    'RSASSA-PKCS1-v1_5', cryptoKey, encoder.encode(signingInput)
+    'RSASSA-PKCS1-v1_5', cryptoKey, enc.encode(signingInput)
   );
-  const signature = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)))
-    .replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
 
+  // Fix: avoid spread operator on large buffers (call stack overflow)
+  const sigBytes = new Uint8Array(signatureBuffer);
+  const signature = b64url(sigBytes);
   const jwt = signingInput + '.' + signature;
 
   const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
@@ -1016,17 +1077,23 @@ async function getAccessToken() {
     body: 'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=' + jwt
   });
   const tokenData = await tokenRes.json();
-  if (!tokenData.access_token) throw new Error('無法取得 Google token：' + JSON.stringify(tokenData));
+  if (!tokenData.access_token) {
+    throw new Error('Google token error: ' + JSON.stringify(tokenData));
+  }
   return tokenData.access_token;
 }
 
 async function appendToSheet(report) {
-  if (SHEETS_CONFIG.privateKey === 'FILL_PRIVATE_KEY') {
+  const cfg = getSheetsConfig();
+  if (!cfg.clientEmail || !cfg.privateKey) {
     console.log('Sheets not configured, skipping sync');
+    showSheetSyncStatus('⚠ 尚未設定 Google Sheets 憑證');
     return;
   }
+  console.log('Starting Sheets sync, email:', cfg.clientEmail.slice(0,20) + '...');
   try {
-    const token = await getAccessToken();
+    const token = await getAccessToken(cfg);
+    console.log('Token obtained OK');
     const summary = report.summary || {};
     const winners = (summary.topWinners || []).map(w => w.industry).join('、');
     const losers = (summary.topLosers || []).map(l => l.industry).join('、');
@@ -1057,7 +1124,7 @@ async function appendToSheet(report) {
     console.log('✓ Report saved to Google Sheets');
     showSheetSyncStatus('✓ 已同步到 Google Sheets');
   } catch(e) {
-    console.warn('Sheets sync failed:', e.message);
+    console.error('Sheets sync failed:', e);
     showSheetSyncStatus('⚠ Sheets 同步失敗：' + e.message);
   }
 }
