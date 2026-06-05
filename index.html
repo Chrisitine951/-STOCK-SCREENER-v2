@@ -285,8 +285,8 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
 </div>
 
 <div class="nav-tabs">
-  <button class="nav-tab active" onclick="switchPage('screener')">📋 選股系統</button>
-  <button class="nav-tab" onclick="switchPage('news')">📡 新聞雷達</button>
+  <button class="nav-tab active" onclick="switchPage('screener', this)">📋 選股系統</button>
+  <button class="nav-tab" onclick="switchPage('news', this)">📡 新聞雷達</button>
 </div>
 
 <div class="apikey-bar">
@@ -837,9 +837,18 @@ async function runAutoReport() {
 
 // Load prefs on start
 window.addEventListener('DOMContentLoaded', () => {
-  loadPrefs();
+  // Restore API key
   const savedKey = localStorage.getItem('screener_api_key');
-  if (savedKey) { const inp = document.getElementById('apiKeyInput'); if (inp) { inp.value = savedKey; onApiKeyChange(savedKey); } }
+  if (savedKey) {
+    const inp = document.getElementById('apiKeyInput');
+    if (inp) {
+      inp.value = savedKey;
+      // Trigger status update after DOM is ready
+      setTimeout(() => onApiKeyChange(savedKey), 50);
+    }
+  }
+  // Restore news prefs
+  loadPrefs();
 });
 
 
@@ -902,11 +911,12 @@ function setLoading(btnId, loading, label) {
 }
 
 // ── PAGE SWITCH ──
-function switchPage(name) {
+function switchPage(name, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
-  event.target.classList.add('active');
+  const page = document.getElementById('page-' + name);
+  if (page) page.classList.add('active');
+  if (el) el.classList.add('active');
 }
 
 // ── MARKET TOGGLE ──
