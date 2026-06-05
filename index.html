@@ -352,7 +352,7 @@ window.addEventListener('DOMContentLoaded', () => {
 async function callGemini(prompt) {
   const key = getApiKey();
   if (!key || key.length < 10) throw new Error('請先設定 Gemini API Key');
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${key}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
