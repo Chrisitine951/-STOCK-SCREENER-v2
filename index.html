@@ -1007,12 +1007,26 @@ window.addEventListener('DOMContentLoaded', () => {
 // GOOGLE SHEETS INTEGRATION
 // ══════════════════════════════════════════
 
-// ── SHEETS CONFIG (loaded from localStorage) ──
+// ── SHEETS CONFIG ──
+// Values below are injected by GitHub Actions from Secrets
+// Fallback to localStorage for local testing
+const _INJECTED_EMAIL = 'INJECT_CLIENT_EMAIL';
+const _INJECTED_KEY = 'INJECT_PRIVATE_KEY';
+
 function getSheetsConfig() {
+  // Use injected values if available (GitHub Actions deployment)
+  // Otherwise fall back to localStorage (local testing)
+  const email = (_INJECTED_EMAIL && !_INJECTED_EMAIL.startsWith('INJECT_'))
+    ? _INJECTED_EMAIL
+    : localStorage.getItem('sheets_client_email') || '';
+  const rawKey = (_INJECTED_KEY && !_INJECTED_KEY.startsWith('INJECT_'))
+    ? _INJECTED_KEY
+    : localStorage.getItem('sheets_private_key') || '';
+  const privateKey = rawKey.replace(/\\n/g, '\n');
   return {
     spreadsheetId: '1Nw-qGajPuk0UEo6bbFtkOwenzw8JmqVyqkMqcNxlgsc',
-    clientEmail: localStorage.getItem('sheets_client_email') || '',
-    privateKey: (localStorage.getItem('sheets_private_key') || '').replace(/\\n/g, '\n'),
+    clientEmail: email,
+    privateKey: privateKey,
     sheetName: 'Sheet1'
   };
 }
