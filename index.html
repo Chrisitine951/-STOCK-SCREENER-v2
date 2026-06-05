@@ -697,8 +697,8 @@ async function analyzeSelected() {
   showReportSkeleton();
 
   // ── 步驟一：綜合摘要（較短，不容易截斷）──
-  const summarySchema = '{"reportDate":"DATE","overallSentiment":"bullish或bearish或neutral","marketOutlook":"2句整體研判","topWinners":[{"industry":"最受益產業","stocks":["個股1","個股2"],"reason":"原因"}],"topLosers":[{"industry":"最受害產業","stocks":["個股1","個股2"],"reason":"原因"}],"keyActions":[{"type":"持有或觀望或減碼","target":"適用對象","reason":"建議"}]}';
-  const summaryPrompt = '今天是' + today + '。以下是' + selected.length + '則重要新聞：' + headlineList + '。請綜合分析對' + markets.join('、') + '股市的整體影響，給出跨事件的產業影響地圖與操作建議。只輸出純JSON一行不要markdown，格式：' + summarySchema.replace('DATE', today) + '。topWinners和topLosers各2到3個，keyActions 2到3條，reason限20字。';
+  const summarySchema = '{"reportDate":"DATE","overallSentiment":"bullish或bearish或neutral","marketOutlook":"整體研判","topWinners":[{"industry":"產業","stocks":["個股"],"reason":"原因"}],"topLosers":[{"industry":"產業","stocks":["個股"],"reason":"原因"}],"keyActions":[{"type":"持有或觀望或減碼","target":"對象","reason":"建議"}]}';
+  const summaryPrompt = '以下是' + selected.length + '則重要新聞：' + headlineList + '。綜合分析對' + markets.join('、') + '股市整體影響。只輸出純JSON一行不要markdown，格式：' + summarySchema.replace('DATE', today) + '。嚴格限制：topWinners只要2個、topLosers只要2個、keyActions只要2條、每個stocks陣列最多2支、reason最多8字、marketOutlook最多30字。';
 
   // ── 步驟二：個別事件分析（每次只分析2則，分批處理）──
   const eventSchema = '{"headline":"標題","impact":"overall_positive或overall_negative或mixed","summary":"1句說明","winners":[{"industry":"產業","stocks":[{"name":"個股","reason":"原因"}]}],"losers":[{"industry":"產業","stocks":[{"name":"個股","reason":"原因"}]}],"action":{"type":"持有或觀望或減碼","reason":"1句"}}';
@@ -749,7 +749,8 @@ async function analyzeSelected() {
     };
 
     renderReport(fullReport);
-    saveReportToStorage(fullReport);
+    // Save regardless of whether all event batches succeeded
+    try { saveReportToStorage(fullReport); } catch(se) { console.warn('Save failed:', se); }
 
   } catch(e) {
     errBox.textContent = '分析錯誤：' + e.message;
