@@ -590,7 +590,7 @@ async function scanNews() {
   const today = new Date().toLocaleDateString('zh-TW');
 
   const schema = '{"scanDate":"DATE","timeRange":"RANGE","news":[{"id":1,"headline":"事件標題（請使用真實新聞標題）","category":"macro或micro或geo","impact":"up或down或mixed","summary":"一句話說明對股市的潛在影響","relevance":"high或medium","source":"來源媒體名稱"}]}';
-  const prompt = '請使用 Google Search 搜尋' + timeLabel + '內，真實發生的、可能影響' + markets.join('、') + '股市的重大事件，範圍：' + topics + '。只列出真實存在的新聞，不要捏造。找出8到10則最重要的事件。只輸出純JSON一行不要markdown，格式：' + schema.replace('DATE', today).replace('RANGE', timeLabel) + '。category值：macro=總經政策、micro=產業個股、geo=地緣政治。每則新聞的summary限20字內。';
+  const prompt = '請使用 Google Search 搜尋' + timeLabel + '內，真實發生的、可能影響' + markets.join('、') + '股市的重大事件，範圍：' + topics + '。只列出真實存在的新聞，不要捏造。找出8到10則最重要的事件。所有headline和summary必須用繁體中文輸出，即使原始新聞是英文也要翻譯成繁體中文。只輸出純JSON一行不要markdown，格式：' + schema.replace('DATE', today).replace('RANGE', timeLabel) + '。category值：macro=總經政策、micro=產業個股、geo=地緣政治。每則新聞的summary限20字內。';
 
   try {
     const raw = await callGemini(prompt, 0, 0, true);
@@ -709,22 +709,34 @@ async function analyzeSelected() {
     const summaryParsed = parseJSON(summaryRaw);
 
     // Run individual analysis in batches of 2
-    const batchSize = 2;
+    const batchSize = 1;  // Process one at a time to prevent JSON truncation
     const eventResults = [];
     for (let i = 0; i < selected.length; i += batchSize) {
       const batch = selected.slice(i, i + batchSize);
       const batchHeadlines = batch.map((n,j) => (j+1) + '. ' + n.headline).join(' | ');
-      const eventPrompt = '今天是' + today + '。針對以下' + batch.length + '則新聞，逐一分析對' + markets.join('、') + '股市的影響：' + batchHeadlines + '。輸出純JSON陣列一行不要markdown，格式：[' + eventSchema + ']。每則winners和losers各1個，stocks各1到2支，summary限20字，reason限12字。';
+      const eventPrompt = '針對以下' + batch.length + '則新聞，逐一分析對' + markets.join('、') + '股市的影響：' + batchHeadlines + '。輸出純JSON陣列，不要markdown不要換行，格式：[' + eventSchema + ']。嚴格限制：每則只能有1個winner和1個loser產業，每個產業只能有1支個股，summary限15字，reason限10字，action.reason限15字。';
       try {
         const batchRaw = await callGemini(eventPrompt);
-        const batchParsed = parseJSON(batchRaw);
-        const arr = Array.isArray(batchParsed) ? batchParsed : (batchParsed.events || [batchParsed]);
+        // Handle both array and object responses
+        let batchParsed;
+        const cleanRaw = batchRaw.replace(/```json|```/g, '').trim();
+        // Try array first
+        const arrMatch = cleanRaw.match(/\[[\s\S]*\]/);
+        const objMatch = cleanRaw.match(/\{[\s\S]*\}/);
+        if (arrMatch) {
+          batchParsed = JSON.parse(arrMatch[0]);
+        } else if (objMatch) {
+          batchParsed = [JSON.parse(objMatch[0])];
+        } else {
+          throw new Error('no JSON found');
+        }
+        const arr = Array.isArray(batchParsed) ? batchParsed : [batchParsed];
         eventResults.push(...arr);
       } catch(be) {
-        // If batch fails, add placeholder
-        batch.forEach(n => eventResults.push({ headline: n.headline, impact: 'mixed', summary: '分析失敗，請重試', winners: [], losers: [], action: null }));
+        console.warn('Batch failed:', be.message);
+        batch.forEach(n => eventResults.push({ headline: n.headline, impact: 'mixed', summary: '個別分析暫時失敗', winners: [], losers: [], action: null }));
       }
-      if (i + batchSize < selected.length) await sleep(1500); // Rate limit buffer
+      if (i + batchSize < selected.length) await sleep(2000); // Rate limit buffer between each
     }
 
     // Combine and render
