@@ -826,10 +826,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 // ── GEMINI CALL ──
-async function callGemini(prompt) {
+async function callGemini(prompt, modelIndex) {
   const key = getApiKey();
   if (!key || key.length < 10) throw new Error('請先設定 Gemini API Key');
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+  const models = [
+    'gemini-2.5-flash',
+    'gemini-2.0-flash-lite',
+    'gemini-1.5-flash'
+  ];
+  const idx = modelIndex || 0;
+  const model = models[idx];
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + key;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -839,7 +846,15 @@ async function callGemini(prompt) {
     })
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+  if (!res.ok) {
+    const msg = data.error?.message || '';
+    // If overloaded and fallback available, try next model
+    if ((msg.includes('high demand') || msg.includes('overloaded') || res.status === 503 || res.status === 429) && idx < models.length - 1) {
+      console.log('Model ' + model + ' overloaded, trying fallback...');
+      return callGemini(prompt, idx + 1);
+    }
+    throw new Error(msg || 'HTTP ' + res.status);
+  }
   if (!data.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error('回應格式異常');
   return data.candidates[0].content.parts[0].text;
 }
