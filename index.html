@@ -359,7 +359,7 @@ async function callGemini(prompt) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.7, maxOutputTokens: 4000 }
+      generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
     })
   });
   const data = await res.json();
@@ -459,19 +459,18 @@ async function runScreener() {
   const usPart = usCount > 0 ? `\n【美股條件】${c.us}。篩出${usCount}檔。` : '';
   const extraPart = extra ? `\n【額外條件】${extra}` : '';
 
-  const twArr = twCount > 0
-    ? `[{"ticker":"2383 台光電","industry":"PCB材料","type":"value","typeLabel":"深度價值","metrics":[{"label":"P/B","value":"1.2x"},{"label":"ROE","value":"18%"},{"label":"市值","value":"120億"}],"desc":"全球極低損耗基板領導廠商，AI伺服器需求帶動放量。護城河清晰分析師覆蓋率低。","risk":"AI伺服器資本支出若縮減出貨將延遲。","scores":{"value":80,"growth":70,"safety":75}}]`
-    : '[]';
-  const usArr = usCount > 0
-    ? `[{"ticker":"EVER","industry":"保險科技","type":"value","typeLabel":"深度低估","metrics":[{"label":"P/E","value":"12x"},{"label":"P/B","value":"1.5x"},{"label":"市值","value":"$590M"}],"desc":"美國最大線上保險比較平台DCF估值低估55%。散戶覆蓋率極低。","risk":"保險業者廣告預算若縮減營收成長將放緩。","scores":{"value":78,"growth":62,"safety":70}}]`
-    : '[]';
+  const twArr = twCount > 0 ? '[FILL_TW_STOCKS]' : '[]';
+  const usArr = usCount > 0 ? '[FILL_US_STOCKS]' : '[]';
 
-  const prompt = `你是專業的價值投資分析師。根據以下條件找出目前最值得長期持有（3到5年）的低估冷門個股：${twPart}${usPart}${extraPart}
+  const stockSchema = `{"ticker":"股號 名稱","industry":"產業","type":"value","typeLabel":"深度價值","metrics":[{"label":"P/B","value":"1.2x"}],"desc":"兩句分析","risk":"一句風險","scores":{"value":75,"growth":60,"safety":80}}`;
 
-選股原則：優先選分析師覆蓋率低、散戶尚未發現的冷門股；護城河清晰；避開純題材炒作。
+  const prompt = `你是價值投資分析師。${twPart}${usPart}${extraPart}
+選股原則：分析師覆蓋率低、散戶未發現、護城河清晰、避開題材炒作。
 
-【極重要】只輸出純JSON一行，不要說明文字、不要markdown、不要換行。完全依照下方範例結構輸出，只替換裡面的數值，tw陣列輸出${twCount}個物件，us陣列輸出${usCount}個物件：
-{"summary":"摘要","tw":${twArr},"us":${usArr}}`;
+只輸出一行純JSON，禁止markdown和換行：
+{"summary":"一句摘要","tw":[${twCount > 0 ? `${twCount}個物件，每個格式：${stockSchema}` : ''}],"us":[${usCount > 0 ? `${usCount}個物件，每個格式：${stockSchema}` : ''}]}
+
+每個stock的desc限20字內，risk限15字內，metrics只放3個指標。`;
 
   try {
     const raw = await callGemini(prompt);
