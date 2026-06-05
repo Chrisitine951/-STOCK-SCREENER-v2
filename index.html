@@ -750,7 +750,8 @@ async function analyzeSelected() {
     for (let i = 0; i < selected.length; i += batchSize) {
       const batch = selected.slice(i, i + batchSize);
       const batchHeadlines = batch.map((n,j) => (j+1) + '. ' + n.headline).join(' | ');
-      const eventPrompt = '針對以下' + batch.length + '則新聞，逐一分析對' + markets.join('、') + '股市的影響：' + batchHeadlines + '。輸出純JSON陣列，不要markdown不要換行，格式：[' + eventSchema + ']。嚴格限制：每則只能有1個winner和1個loser產業，每個產業只能有1支個股，summary限15字，reason限10字，action.reason限15字。';
+      const shortHeadline = batch.map((n,i) => (i+1) + '.' + n.headline.slice(0,20)).join('|');
+      const eventPrompt = '分析以下新聞對股市影響：' + shortHeadline + '。輸出純JSON陣列不要markdown：[' + eventSchema + ']。每則限制：1個winner、1個loser、各1支股票、summary最多10字、reason最多8字。';
       try {
         const batchRaw = await callGemini(eventPrompt);
         // Handle both array and object responses
@@ -808,8 +809,57 @@ function saveReportToStorage(report) {
   } catch(e) {
     console.warn('Failed to save report:', e);
   }
-  // Also sync to Google Sheets
-  appendToSheet(report);
+  // Also sync to Google Sheets (新聞分析 sheet)
+  appendToSheet(report, '新聞分析');
+}
+
+// ── SCREENER SHEETS SAVE ──
+async function saveScreenerToSheet(parsed, market) {
+  const cfg = getSheetsConfig();
+  if (!cfg.clientEmail || !cfg.privateKey) return;
+
+  const now = new Date();
+  const twStocks = (parsed.tw || []).map(s => s.ticker).join('、');
+  const usStocks = (parsed.us || []).map(s => s.ticker).join('、');
+  const marketLabel = market === 'tw' ? '台股' : market === 'us' ? '美股' : '台股+美股';
+
+  // Build criteria summary
+  const twCriteria = market !== 'us' ? Array.from(document.querySelectorAll('#tw-section .criteria-row'))
+    .map(r => r.querySelector('.criteria-val').textContent.trim()).join('、') : '';
+  const usCriteria = market !== 'tw' ? Array.from(document.querySelectorAll('#us-section .criteria-row'))
+    .map(r => r.querySelector('.criteria-val').textContent.trim()).join('、') : '';
+  const criteria = [twCriteria, usCriteria].filter(Boolean).join(' / ');
+
+  const row = [
+    now.toLocaleDateString('zh-TW'),
+    now.toLocaleTimeString('zh-TW'),
+    marketLabel,
+    twStocks || '—',
+    usStocks || '—',
+    criteria,
+    JSON.stringify(parsed).slice(0, 3000)
+  ];
+
+  try {
+    const token = await getAccessToken(cfg);
+    const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + cfg.spreadsheetId +
+      '/values/' + encodeURIComponent('選股記錄') + '!A1:append?valueInputOption=USER_ENTERED';
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: [row] })
+    });
+    if (res.ok) {
+      console.log('✓ Screener saved to Google Sheets');
+      showSheetSyncStatus('✓ 選股結果已同步到 Google Sheets');
+    } else {
+      const err = await res.json();
+      throw new Error(err.error?.message || 'Sheets write failed');
+    }
+  } catch(e) {
+    console.warn('Screener Sheets sync failed:', e.message);
+    showSheetSyncStatus('⚠ 選股 Sheets 同步失敗：' + e.message);
+  }
 }
 
 function showReportSkeleton() {
@@ -1034,7 +1084,7 @@ function getSheetsConfig() {
     spreadsheetId: '1Nw-qGajPuk0UEo6bbFtkOwenzw8JmqVyqkMqcNxlgsc',
     clientEmail: email,
     privateKey: privateKey,
-    sheetName: '工作表1'
+    sheetName: '新聞分析'
   };
 }
 const SHEETS_CONFIG = { get privateKey() { return getSheetsConfig().privateKey; } };
@@ -1104,7 +1154,7 @@ async function getAccessToken(cfg) {
   return tokenData.access_token;
 }
 
-async function appendToSheet(report) {
+async function appendToSheet(report, sheetNameOverride) {
   const cfg = getSheetsConfig();
   if (!cfg.clientEmail || !cfg.privateKey) {
     console.log('Sheets not configured, skipping sync');
@@ -1131,8 +1181,9 @@ async function appendToSheet(report) {
       JSON.stringify(report).slice(0, 4000)
     ];
 
+    const sheetTarget = sheetNameOverride || cfg.sheetName;
     const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + cfg.spreadsheetId +
-      '/values/' + encodeURIComponent(cfg.sheetName) + '!A1:append?valueInputOption=USER_ENTERED';
+      '/values/' + encodeURIComponent(sheetTarget) + '!A1:append?valueInputOption=USER_ENTERED';
 
     const res = await fetch(url, {
       method: 'POST',
@@ -1339,6 +1390,7 @@ async function runScreener() {
     if (parsed.summary) { sum.textContent = '📊 ' + parsed.summary; sum.classList.add('active'); }
     else sum.classList.remove('active');
     renderStockCards(parsed.tw, parsed.us);
+    try { saveScreenerToSheet(parsed, currentMarket); } catch(se) { console.warn('Screener save failed:', se); }
   } catch(e) {
     errBox.textContent = `錯誤：${e.message}`;
     errBox.classList.add('active');
