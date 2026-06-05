@@ -194,6 +194,84 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
   .apikey-hint { font-size: 11px; color: #555; margin-left: auto; }
   .apikey-hint a { color: #6a9fd8; text-decoration: none; }
 
+
+  /* NEWS RADAR LAYOUT */
+  .news-layout { display: grid; grid-template-columns: 280px 1fr 1fr; max-width: 1400px; margin: 0 auto; min-height: calc(100vh - 105px); }
+  .news-sidebar { padding: 24px 20px; border-right: 1px solid var(--rule); background: var(--paper); overflow-y: auto; }
+  .news-center { padding: 24px 24px; border-right: 1px solid var(--rule); overflow-y: auto; }
+  .news-right { padding: 24px 24px; overflow-y: auto; }
+  .news-center-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--rule); }
+
+  /* MODE TOGGLE */
+  .mode-toggle { display: flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; margin-bottom: 20px; }
+  .mode-btn { flex: 1; padding: 9px 6px; font-family: var(--mono); font-size: 11px; border: none; background: transparent; color: var(--ink3); cursor: pointer; transition: all 0.15s; }
+  .mode-btn:hover { color: var(--ink); }
+  .mode-btn.active { background: var(--ink); color: var(--bg); }
+
+  /* SIDEBAR SECTIONS */
+  .sidebar-section { margin-bottom: 20px; }
+  .sidebar-section-title { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--ink3); text-transform: uppercase; margin-bottom: 8px; }
+
+  /* SCAN TYPE CARDS */
+  .scan-type-card { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--rule); border-radius: 6px; cursor: pointer; margin-bottom: 6px; transition: all 0.15s; background: white; }
+  .scan-type-card:hover { border-color: var(--ink2); }
+  .scan-type-card.active { border-color: var(--accent); background: var(--accent-light); }
+  .scan-type-icon { font-size: 18px; flex-shrink: 0; }
+  .scan-type-name { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--ink); }
+  .scan-type-desc { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+
+  /* MANUAL ADD */
+  .manual-add-section { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--rule); }
+  .add-manual-btn { width: 100%; margin-top: 6px; padding: 7px; background: transparent; border: 1px dashed var(--rule); border-radius: 4px; font-family: var(--mono); font-size: 11px; color: var(--ink3); cursor: pointer; transition: all 0.15s; }
+  .add-manual-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* PREFS */
+  .pref-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--rule2); }
+  .pref-label { font-family: var(--mono); font-size: 11px; color: var(--ink2); }
+  .pref-select { font-family: var(--mono); font-size: 11px; background: white; border: 1px solid var(--rule); border-radius: 3px; padding: 3px 6px; color: var(--ink); outline: none; }
+  .save-pref-btn { width: 100%; margin-top: 10px; padding: 8px; background: transparent; border: 1px solid var(--ink2); border-radius: 4px; font-family: var(--mono); font-size: 11px; color: var(--ink2); cursor: pointer; transition: all 0.15s; }
+  .save-pref-btn:hover { background: var(--ink2); color: var(--bg); }
+
+  /* NEWS ITEMS */
+  .news-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1px solid var(--rule); border-radius: 6px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; background: white; }
+  .news-item:hover { border-color: rgba(26,26,24,0.2); }
+  .news-item.selected { border-color: var(--accent); background: var(--accent-light); }
+  .news-checkbox { width: 16px; height: 16px; border: 1.5px solid var(--rule); border-radius: 3px; flex-shrink: 0; margin-top: 3px; display: flex; align-items: center; justify-content: center; font-size: 10px; transition: all 0.15s; }
+  .news-item.selected .news-checkbox { background: var(--accent); border-color: var(--accent); color: white; }
+  .news-body { flex: 1; }
+  .news-headline { font-size: 13px; font-weight: 400; color: var(--ink); line-height: 1.5; margin-bottom: 4px; }
+  .news-meta { display: flex; gap: 8px; align-items: center; }
+  .news-tag { font-family: var(--mono); font-size: 10px; padding: 1px 6px; border-radius: 2px; }
+  .news-tag-macro { background: var(--blue-light); color: var(--blue); }
+  .news-tag-micro { background: var(--amber-light); color: var(--amber); }
+  .news-tag-geo { background: #f0e8f8; color: #6a3a9a; }
+  .news-summary { font-size: 11px; color: var(--ink3); margin-top: 4px; line-height: 1.6; }
+  .news-impact { font-family: var(--mono); font-size: 10px; padding: 1px 6px; border-radius: 2px; }
+  .news-impact-up { background: var(--accent-light); color: var(--accent); }
+  .news-impact-down { background: var(--red-light); color: var(--red); }
+  .news-impact-mixed { background: var(--amber-light); color: var(--amber); }
+
+  /* SELECT HINT */
+  .selected-count { font-family: var(--mono); font-size: 11px; color: var(--accent); background: var(--accent-light); padding: 3px 10px; border-radius: 3px; }
+  .analyze-selected-btn { font-family: var(--mono); font-size: 11px; padding: 6px 14px; background: var(--ink); color: var(--bg); border: none; border-radius: 4px; cursor: pointer; margin-left: 8px; transition: opacity 0.15s; }
+  .analyze-selected-btn:hover { opacity: 0.85; }
+  .analyze-selected-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* REPORT CARDS */
+  .report-event-block { background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; padding: 16px 18px; margin-bottom: 16px; }
+  .report-event-title { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 6px; line-height: 1.5; }
+  .report-event-summary { font-size: 12px; color: var(--ink2); line-height: 1.75; margin-bottom: 12px; }
+  .report-impact-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .report-impact-pill { font-family: var(--mono); font-size: 10px; padding: 3px 8px; border-radius: 3px; }
+
+  /* LOADING SKELETON */
+  .skeleton { background: linear-gradient(90deg, var(--rule2) 25%, var(--rule) 50%, var(--rule2) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .skel-line { height: 12px; margin-bottom: 8px; }
+  .skel-short { width: 40%; }
+  .skel-medium { width: 70%; }
+  .skel-long { width: 95%; }
+
 </style>
 </head>
 <body>
@@ -208,7 +286,7 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
 
 <div class="nav-tabs">
   <button class="nav-tab active" onclick="switchPage('screener')">📋 選股系統</button>
-  <button class="nav-tab" onclick="switchPage('event')">🌐 事件影響分析</button>
+  <button class="nav-tab" onclick="switchPage('news')">📡 新聞雷達</button>
 </div>
 
 <div class="apikey-bar">
@@ -274,55 +352,151 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
   </div>
 </div>
 
-<!-- ==================== PAGE 2: EVENT ANALYSIS ==================== -->
-<div class="page" id="page-event">
-  <div class="layout">
-    <div class="panel">
-      <div class="panel-label">第一步：描述事件，產生分析 Prompt</div>
 
-      <div class="field-label">事件標題</div>
-      <input class="text-input" id="eventTitle" placeholder="例如：Fed 宣布降息 2 碼、中美晶片管制升級、油價暴漲 20%..." />
+<!-- ==================== PAGE 2: NEWS RADAR ==================== -->
+<div class="page" id="page-news">
+  <div class="news-layout">
 
-      <div class="field-label">事件類型</div>
-      <div class="tag-group" id="eventTypeGroup">
-        <button class="tag-btn active" onclick="toggleTag(this,'eventTypeGroup')">總經政策</button>
-        <button class="tag-btn" onclick="toggleTag(this,'eventTypeGroup')">地緣政治</button>
-        <button class="tag-btn" onclick="toggleTag(this,'eventTypeGroup')">產業事件</button>
-        <button class="tag-btn" onclick="toggleTag(this,'eventTypeGroup')">原物料</button>
-        <button class="tag-btn" onclick="toggleTag(this,'eventTypeGroup')">匯率外匯</button>
-        <button class="tag-btn" onclick="toggleTag(this,'eventTypeGroup')">企業財報</button>
+    <!-- LEFT: CONTROLS -->
+    <div class="news-sidebar">
+
+      <!-- MODE TOGGLE -->
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="modeExplore" onclick="setMode('explore')">🔍 探索模式</button>
+        <button class="mode-btn" id="modeAuto" onclick="setMode('auto')">⚡ 自動模式</button>
       </div>
 
-      <div class="field-label">影響市場</div>
-      <div class="tag-group" id="marketGroup">
-        <button class="tag-btn active" onclick="toggleTag(this,'marketGroup')">台股</button>
-        <button class="tag-btn active" onclick="toggleTag(this,'marketGroup')">美股</button>
-        <button class="tag-btn" onclick="toggleTag(this,'marketGroup')">全球股市</button>
+      <!-- EXPLORE MODE CONTROLS -->
+      <div id="exploreControls">
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">新聞時間範圍</div>
+          <div class="tag-group" id="timeGroup">
+            <button class="tag-btn active" onclick="toggleTag(this,'timeGroup')">今日</button>
+            <button class="tag-btn" onclick="toggleTag(this,'timeGroup')">本週</button>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">掃描類型</div>
+          <div class="scan-type-card active" id="scanMacro" onclick="setScanType('macro')">
+            <div class="scan-type-icon">🌐</div>
+            <div>
+              <div class="scan-type-name">宏觀總覽</div>
+              <div class="scan-type-desc">總經政策・地緣政治・財經大事</div>
+            </div>
+          </div>
+          <div class="scan-type-card" id="scanMicro" onclick="setScanType('micro')">
+            <div class="scan-type-icon">🔬</div>
+            <div>
+              <div class="scan-type-name">產業個股</div>
+              <div class="scan-type-desc">原物料・產業事件・企業財報</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-section" id="microFilters" style="display:none">
+          <div class="sidebar-section-title">產業篩選（選填）</div>
+          <div class="tag-group" id="industryGroup">
+            <button class="tag-btn" onclick="toggleTag(this,'industryGroup')">半導體</button>
+            <button class="tag-btn" onclick="toggleTag(this,'industryGroup')">AI/科技</button>
+            <button class="tag-btn" onclick="toggleTag(this,'industryGroup')">能源</button>
+            <button class="tag-btn" onclick="toggleTag(this,'industryGroup')">金融</button>
+            <button class="tag-btn" onclick="toggleTag(this,'industryGroup')">消費</button>
+            <button class="tag-btn" onclick="toggleTag(this,'industryGroup')">生技醫療</button>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">影響市場</div>
+          <div class="tag-group" id="newsMarketGroup">
+            <button class="tag-btn active" onclick="toggleTag(this,'newsMarketGroup')">台股</button>
+            <button class="tag-btn active" onclick="toggleTag(this,'newsMarketGroup')">美股</button>
+          </div>
+        </div>
+
+        <button class="gen-btn" id="scanBtn" onclick="scanNews()">📡 掃描最新新聞</button>
+
+        <!-- MANUAL ADD -->
+        <div class="manual-add-section">
+          <div class="sidebar-section-title">手動補充事件</div>
+          <input class="text-input" id="manualEvent" placeholder="輸入未被抓到的事件..." />
+          <button class="add-manual-btn" onclick="addManualEvent()">＋ 加入清單</button>
+        </div>
       </div>
 
-      <div class="field-label">我想了解的方向（可複選）</div>
-      <div class="tag-group" id="focusGroup">
-        <button class="tag-btn active" onclick="toggleTag(this,'focusGroup')">受益產業 + 個股</button>
-        <button class="tag-btn active" onclick="toggleTag(this,'focusGroup')">受害產業 + 個股</button>
-        <button class="tag-btn active" onclick="toggleTag(this,'focusGroup')">歷史類似事件</button>
-        <button class="tag-btn active" onclick="toggleTag(this,'focusGroup')">操作建議</button>
+      <!-- AUTO MODE CONTROLS -->
+      <div id="autoControls" style="display:none">
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">自動模式設定</div>
+          <div class="pref-row">
+            <span class="pref-label">執行頻率</span>
+            <select class="pref-select" id="autoFreq">
+              <option>每日早上</option>
+              <option>每週一</option>
+              <option>手動觸發</option>
+            </select>
+          </div>
+          <div class="pref-row">
+            <span class="pref-label">新聞數量</span>
+            <select class="pref-select" id="autoCount">
+              <option>3則重點</option>
+              <option>5則重點</option>
+              <option>全部掃描</option>
+            </select>
+          </div>
+          <div class="pref-row">
+            <span class="pref-label">掃描範圍</span>
+            <select class="pref-select" id="autoScope">
+              <option>宏觀＋產業</option>
+              <option>只看宏觀</option>
+              <option>只看產業</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">我的持倉（AI 優先分析相關新聞）</div>
+          <textarea class="text-input" id="myHoldings" rows="3" placeholder="例如：台積電、聯發科、NVDA、AAPL..."></textarea>
+          <button class="save-pref-btn" onclick="savePrefs()">💾 儲存偏好設定</button>
+        </div>
+
+        <button class="gen-btn" id="autoRunBtn" onclick="runAutoReport()">⚡ 一鍵生成報告</button>
       </div>
-
-      <div class="field-label">補充說明（選填）</div>
-      <textarea class="text-input" id="eventDetail" rows="3" placeholder="例如：我持有台積電、聯發科，想知道對我的持倉影響..."></textarea>
-
-      <button class="gen-btn" id="eventRunBtn" onclick="runEventAnalysis()">▶ 執行事件分析</button>
     </div>
 
-    <div class="panel">
-      <div class="panel-label">事件分析報告</div>
-      <div class="error-box" id="eventError"></div>
-      <div class="results-area" id="eventResults">
-        <div class="empty-results"><div class="empty-icon">🌐</div>填入事件後點「執行事件分析」，AI 將自動生成影響報告</div>
+    <!-- CENTER: NEWS LIST -->
+    <div class="news-center">
+      <div class="news-center-header">
+        <div class="panel-label" style="margin-bottom:0">新聞清單</div>
+        <div id="newsSelectHint" style="display:none">
+          <span id="selectedCount" class="selected-count">0 則已選</span>
+          <button class="analyze-selected-btn" id="analyzeBtn" onclick="analyzeSelected()">分析選定事件 →</button>
+        </div>
+      </div>
+
+      <div id="newsListArea">
+        <div class="empty-results" style="margin-top:24px">
+          <div class="empty-icon">📡</div>
+          選擇掃描類型後點「掃描最新新聞」
+        </div>
       </div>
     </div>
+
+    <!-- RIGHT: ANALYSIS REPORT -->
+    <div class="news-right">
+      <div class="panel-label">分析報告</div>
+      <div class="error-box" id="newsError"></div>
+      <div id="newsReportArea">
+        <div class="empty-results">
+          <div class="empty-icon">📊</div>
+          選定新聞後點「分析選定事件」
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
+
 
 <script>
 document.getElementById('mastDate').textContent = new Date().toLocaleDateString('zh-TW', {year:'numeric',month:'long',day:'numeric'});
@@ -344,10 +518,330 @@ function onApiKeyChange(val) {
     status.className = 'apikey-status';
   }
 }
+
+// ══════════════════════════════════════════
+// NEWS RADAR
+// ══════════════════════════════════════════
+let currentMode = 'explore';
+let currentScanType = 'macro';
+let scannedNews = [];
+let selectedNewsIds = new Set();
+let savedPrefs = {};
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('modeExplore').classList.toggle('active', mode === 'explore');
+  document.getElementById('modeAuto').classList.toggle('active', mode === 'auto');
+  document.getElementById('exploreControls').style.display = mode === 'explore' ? 'block' : 'none';
+  document.getElementById('autoControls').style.display = mode === 'auto' ? 'block' : 'none';
+}
+
+function setScanType(type) {
+  currentScanType = type;
+  document.getElementById('scanMacro').classList.toggle('active', type === 'macro');
+  document.getElementById('scanMicro').classList.toggle('active', type === 'micro');
+  document.getElementById('microFilters').style.display = type === 'micro' ? 'block' : 'none';
+}
+
+function savePrefs() {
+  savedPrefs = {
+    freq: document.getElementById('autoFreq').value,
+    count: document.getElementById('autoCount').value,
+    scope: document.getElementById('autoScope').value,
+    holdings: document.getElementById('myHoldings').value
+  };
+  localStorage.setItem('news_prefs', JSON.stringify(savedPrefs));
+  const btn = document.querySelector('.save-pref-btn');
+  btn.textContent = '✓ 已儲存';
+  setTimeout(() => { btn.textContent = '💾 儲存偏好設定'; }, 2000);
+}
+
+function loadPrefs() {
+  const saved = localStorage.getItem('news_prefs');
+  if (saved) {
+    savedPrefs = JSON.parse(saved);
+    if (savedPrefs.holdings) document.getElementById('myHoldings').value = savedPrefs.holdings;
+    if (savedPrefs.freq) document.getElementById('autoFreq').value = savedPrefs.freq;
+    if (savedPrefs.count) document.getElementById('autoCount').value = savedPrefs.count;
+    if (savedPrefs.scope) document.getElementById('autoScope').value = savedPrefs.scope;
+  }
+}
+
+// ── SCAN NEWS ──
+async function scanNews() {
+  const errBox = document.getElementById('newsError');
+  errBox.classList.remove('active');
+  setLoading('scanBtn', true, '📡 掃描最新新聞');
+  selectedNewsIds.clear();
+  updateSelectHint();
+  showNewsSkeleton();
+
+  const times = getActiveTags('timeGroup');
+  const markets = getActiveTags('newsMarketGroup');
+  const timeLabel = times.includes('本週') ? '本週（過去7天）' : '今日（過去24小時）';
+  const industries = currentScanType === 'micro' ? getActiveTags('industryGroup') : [];
+
+  const macroTopics = '總經政策（Fed利率、通膨、GDP）、地緣政治（戰爭、貿易摩擦、制裁）、央行決策、匯率外匯';
+  const microTopics = industries.length > 0
+    ? `${industries.join('、')} 相關的產業事件、企業財報、原物料價格、供應鏈變化`
+    : '半導體、能源、原物料、企業財報、產業供需、併購事件';
+
+  const topics = currentScanType === 'macro' ? macroTopics : microTopics;
+  const today = new Date().toLocaleDateString('zh-TW');
+
+  const prompt = `今天是${today}。請搜尋${timeLabel}內，可能影響${markets.join('、')}股市的重大事件，範圍：${topics}。
+
+找出8到10則最重要的事件。只輸出純JSON一行，不要markdown：
+{"scanDate":"${today}","timeRange":"${timeLabel}","news":[{"id":1,"headline":"事件標題","category":"macro或micro或geo","impact":"up或down或mixed","summary":"一句話說明對股市的潛在影響","relevance":"high或medium"}]}
+
+category值：macro=總經政策、micro=產業個股、geo=地緣政治。每則新聞的summary限20字內。`;
+
+  try {
+    const raw = await callGemini(prompt);
+    const parsed = parseJSON(raw);
+    scannedNews = parsed.news || [];
+
+    // Add any manual events
+    const manualItems = document.querySelectorAll('.manual-news-item');
+    manualItems.forEach(item => {
+      const id = parseInt(item.dataset.id);
+      const existing = scannedNews.find(n => n.id === id);
+      if (!existing) scannedNews.push({ id, headline: item.dataset.headline, category: 'macro', impact: 'mixed', summary: '手動新增', relevance: 'high', manual: true });
+    });
+
+    renderNewsList(scannedNews);
+  } catch(e) {
+    errBox.textContent = `錯誤：${e.message}`;
+    errBox.classList.add('active');
+    document.getElementById('newsListArea').innerHTML = '<div class="empty-results"><div class="empty-icon">📡</div>掃描失敗，請重試</div>';
+  }
+  setLoading('scanBtn', false, '📡 掃描最新新聞');
+}
+
+function showNewsSkeleton() {
+  let html = '';
+  for (let i = 0; i < 6; i++) {
+    html += `<div class="news-item" style="cursor:default">
+      <div class="news-checkbox"></div>
+      <div class="news-body">
+        <div class="skeleton skel-line skel-medium" style="margin-bottom:6px"></div>
+        <div class="skeleton skel-line skel-long" style="margin-bottom:6px"></div>
+        <div class="skeleton skel-line skel-short"></div>
+      </div>
+    </div>`;
+  }
+  document.getElementById('newsListArea').innerHTML = html;
+}
+
+function renderNewsList(news) {
+  if (!news.length) {
+    document.getElementById('newsListArea').innerHTML = '<div class="empty-results"><div class="empty-icon">📡</div>未找到相關新聞</div>';
+    return;
+  }
+  const catLabel = { macro:'總經', micro:'產業', geo:'地緣政治' };
+  const catClass = { macro:'news-tag-macro', micro:'news-tag-micro', geo:'news-tag-geo' };
+  const impactLabel = { up:'利多 ▲', down:'利空 ▼', mixed:'影響混合' };
+  const impactClass = { up:'news-impact-up', down:'news-impact-down', mixed:'news-impact-mixed' };
+
+  let html = '';
+  news.forEach(n => {
+    const sel = selectedNewsIds.has(n.id);
+    html += `<div class="news-item${sel?' selected':''}" onclick="toggleNews(${n.id})" id="news-item-${n.id}">
+      <div class="news-checkbox">${sel?'✓':''}</div>
+      <div class="news-body">
+        <div class="news-headline">${n.headline}</div>
+        <div class="news-meta">
+          <span class="news-tag ${catClass[n.category]||'news-tag-macro'}">${catLabel[n.category]||n.category}</span>
+          <span class="news-impact ${impactClass[n.impact]||'news-impact-mixed'}">${impactLabel[n.impact]||n.impact}</span>
+          ${n.relevance==='high' ? '<span style="font-family:var(--mono);font-size:10px;color:var(--amber)">★ 高關聯</span>' : ''}
+          ${n.manual ? '<span style="font-family:var(--mono);font-size:10px;color:var(--ink3)">手動</span>' : ''}
+        </div>
+        <div class="news-summary">${n.summary}</div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('newsListArea').innerHTML = html;
+  document.getElementById('newsSelectHint').style.display = 'flex';
+}
+
+function toggleNews(id) {
+  if (selectedNewsIds.has(id)) { selectedNewsIds.delete(id); }
+  else { selectedNewsIds.add(id); }
+  const item = document.getElementById('news-item-' + id);
+  if (item) {
+    item.classList.toggle('selected', selectedNewsIds.has(id));
+    item.querySelector('.news-checkbox').textContent = selectedNewsIds.has(id) ? '✓' : '';
+  }
+  updateSelectHint();
+}
+
+function updateSelectHint() {
+  const count = selectedNewsIds.size;
+  const countEl = document.getElementById('selectedCount');
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  if (countEl) countEl.textContent = `${count} 則已選`;
+  if (analyzeBtn) analyzeBtn.disabled = count === 0;
+}
+
+function addManualEvent() {
+  const input = document.getElementById('manualEvent');
+  const val = input.value.trim();
+  if (!val) return;
+  const id = Date.now();
+  scannedNews.push({ id, headline: val, category: 'macro', impact: 'mixed', summary: '手動新增', relevance: 'high', manual: true });
+  renderNewsList(scannedNews);
+  input.value = '';
+}
+
+// ── ANALYZE SELECTED ──
+async function analyzeSelected() {
+  if (!selectedNewsIds.size) return;
+  const errBox = document.getElementById('newsError');
+  errBox.classList.remove('active');
+  setLoading('analyzeBtn', true, '分析選定事件 →');
+
+  const selected = scannedNews.filter(n => selectedNewsIds.has(n.id));
+  const headlines = selected.map((n,i) => `${i+1}. ${n.headline}`).join('
+');
+  const markets = getActiveTags('newsMarketGroup');
+  const today = new Date().toLocaleDateString('zh-TW');
+
+  const prompt = `今天是${today}。請針對以下${selected.length}則新聞事件，分析對${markets.join('、')}股市的影響：
+
+${headlines}
+
+只輸出純JSON一行，不要markdown：
+{"reportDate":"${today}","events":[{"headline":"事件標題","impact":"overall_positive或overall_negative或mixed","summary":"2句背景說明","winners":[{"industry":"受益產業","stocks":[{"name":"個股","reason":"原因"}]}],"losers":[{"industry":"受害產業","stocks":[{"name":"個股","reason":"原因"}]}],"action":{"type":"持有或觀望或減碼","reason":"1句建議"}}]}
+
+每個事件的winners和losers各1到2個產業，每個產業1到2支個股。summary限30字，reason限15字。`;
+
+  showReportSkeleton();
+
+  try {
+    const raw = await callGemini(prompt);
+    const parsed = parseJSON(raw);
+    renderReport(parsed);
+  } catch(e) {
+    errBox.textContent = `分析錯誤：${e.message}`;
+    errBox.classList.add('active');
+    document.getElementById('newsReportArea').innerHTML = '<div class="empty-results"><div class="empty-icon">📊</div>分析失敗，請重試</div>';
+  }
+  setLoading('analyzeBtn', false, '分析選定事件 →');
+}
+
+function showReportSkeleton() {
+  let html = '';
+  for (let i = 0; i < 3; i++) {
+    html += `<div class="report-event-block">
+      <div class="skeleton skel-line skel-long" style="margin-bottom:8px"></div>
+      <div class="skeleton skel-line skel-medium" style="margin-bottom:8px"></div>
+      <div class="skeleton skel-line skel-short"></div>
+    </div>`;
+  }
+  document.getElementById('newsReportArea').innerHTML = html;
+}
+
+function renderReport(data) {
+  const events = data.events || [];
+  if (!events.length) {
+    document.getElementById('newsReportArea').innerHTML = '<div class="empty-results"><div class="empty-icon">📊</div>無分析結果</div>';
+    return;
+  }
+
+  const impactColor = { overall_positive: 'var(--accent)', overall_negative: 'var(--red)', mixed: 'var(--amber)' };
+  const impactLabel = { overall_positive: '利多 ▲', overall_negative: '利空 ▼', mixed: '影響混合' };
+  const actionClass = { '持有': 'action-hold', '觀望': 'action-wait', '減碼': 'action-reduce' };
+  const actionIcon = { '持有': '✓', '觀望': '⏸', '減碼': '↓' };
+
+  let html = `<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);margin-bottom:16px;letter-spacing:0.08em">報告日期：${data.reportDate || new Date().toLocaleDateString('zh-TW')} · ${events.length} 則事件</div>`;
+
+  events.forEach(ev => {
+    const ic = impactColor[ev.impact] || 'var(--amber)';
+    const il = impactLabel[ev.impact] || ev.impact;
+    html += `<div class="report-event-block">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
+        <div class="report-event-title" style="flex:1;padding-right:12px">${ev.headline}</div>
+        <span style="font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:3px;background:${ic}20;color:${ic};white-space:nowrap;flex-shrink:0">${il}</span>
+      </div>
+      <div class="report-event-summary">${ev.summary || ''}</div>`;
+
+    const winners = ev.winners || [], losers = ev.losers || [];
+    if (winners.length || losers.length) {
+      html += `<div class="impact-grid" style="margin-bottom:10px">`;
+      html += `<div class="impact-col win"><div class="impact-col-title">▲ 受益</div>`;
+      winners.forEach(w => {
+        html += `<div style="margin-bottom:6px"><div style="font-family:var(--mono);font-size:10px;font-weight:500;color:var(--accent)">${w.industry}</div>`;
+        (w.stocks||[]).forEach(s => { html += `<div class="impact-stock"><span class="impact-stock-name">${s.name}</span><span style="font-size:10px;color:var(--ink3);margin-left:5px">${s.reason||''}</span></div>`; });
+        html += `</div>`;
+      });
+      html += `</div><div class="impact-col lose"><div class="impact-col-title">▼ 受害</div>`;
+      losers.forEach(l => {
+        html += `<div style="margin-bottom:6px"><div style="font-family:var(--mono);font-size:10px;font-weight:500;color:var(--red)">${l.industry}</div>`;
+        (l.stocks||[]).forEach(s => { html += `<div class="impact-stock"><span class="impact-stock-name">${s.name}</span><span style="font-size:10px;color:var(--ink3);margin-left:5px">${s.reason||''}</span></div>`; });
+        html += `</div>`;
+      });
+      html += `</div></div>`;
+    }
+
+    if (ev.action) {
+      const ac = actionClass[ev.action.type] || 'action-wait';
+      const ai = actionIcon[ev.action.type] || '⏸';
+      html += `<div class="action-box ${ac}" style="margin-top:8px"><div class="action-label">${ai} ${ev.action.type}</div><div class="action-content">${ev.action.reason}</div></div>`;
+    }
+    html += `</div>`;
+  });
+
+  document.getElementById('newsReportArea').innerHTML = html;
+}
+
+// ── AUTO REPORT ──
+async function runAutoReport() {
+  const errBox = document.getElementById('newsError');
+  errBox.classList.remove('active');
+  setLoading('autoRunBtn', true, '⚡ 一鍵生成報告');
+
+  const prefs = JSON.parse(localStorage.getItem('news_prefs') || '{}');
+  const holdings = prefs.holdings || '';
+  const count = prefs.count === '5則重點' ? 5 : prefs.count === '全部掃描' ? 10 : 3;
+  const scope = prefs.scope === '只看宏觀' ? '總經政策、地緣政治、央行決策' :
+                prefs.scope === '只看產業' ? '產業事件、企業財報、原物料' :
+                '總經政策、地緣政治、產業事件、企業財報、原物料';
+  const today = new Date().toLocaleDateString('zh-TW');
+
+  const prompt = `今天是${today}。請自動完成以下兩步驟並合併輸出：
+
+步驟一：搜尋今日最重要的${count}則影響股市的新聞，範圍：${scope}。${holdings ? `優先納入與以下持倉相關的事件：${holdings}。` : ''}
+
+步驟二：針對這${count}則新聞逐一分析受益/受害產業、個股影響、操作建議。
+
+只輸出純JSON一行，不要markdown：
+{"reportDate":"${today}","autoGenerated":true,"events":[{"headline":"事件標題","impact":"overall_positive或overall_negative或mixed","summary":"2句說明","winners":[{"industry":"產業","stocks":[{"name":"個股","reason":"原因"}]}],"losers":[{"industry":"產業","stocks":[{"name":"個股","reason":"原因"}]}],"action":{"type":"持有或觀望或減碼","reason":"1句建議"}}]}
+
+每個事件winners和losers各1到2個，summary限30字，reason限15字。`;
+
+  showReportSkeleton();
+
+  try {
+    const raw = await callGemini(prompt);
+    const parsed = parseJSON(raw);
+    // Switch to explore mode to show results
+    setMode('explore');
+    renderReport(parsed);
+    document.getElementById('newsListArea').innerHTML = `<div style="background:var(--accent-light);border-left:3px solid var(--accent);padding:10px 14px;border-radius:0 4px 4px 0;font-size:12px;color:var(--ink2)"><strong style="color:var(--accent)">⚡ 自動模式</strong>：AI 已自動選取 ${(parsed.events||[]).length} 則重要新聞並完成分析</div>`;
+  } catch(e) {
+    errBox.textContent = `自動報告錯誤：${e.message}`;
+    errBox.classList.add('active');
+  }
+  setLoading('autoRunBtn', false, '⚡ 一鍵生成報告');
+}
+
+// Load prefs on start
 window.addEventListener('DOMContentLoaded', () => {
-  const saved = localStorage.getItem('screener_api_key');
-  if (saved) { const inp = document.getElementById('apiKeyInput'); if (inp) { inp.value = saved; onApiKeyChange(saved); } }
+  loadPrefs();
+  const savedKey = localStorage.getItem('screener_api_key');
+  if (savedKey) { const inp = document.getElementById('apiKeyInput'); if (inp) { inp.value = savedKey; onApiKeyChange(savedKey); } }
 });
+
 
 // ── GEMINI CALL ──
 async function callGemini(prompt) {
