@@ -690,26 +690,77 @@ async function analyzeSelected() {
   setLoading('analyzeBtn', true, '分析選定事件 →');
 
   const selected = scannedNews.filter(n => selectedNewsIds.has(n.id));
-  const headlines = selected.map((n,i) => (i+1) + '. ' + n.headline).join('; ');
   const markets = getActiveTags('newsMarketGroup');
   const today = new Date().toLocaleDateString('zh-TW');
-
-  const schema = '{"reportDate":"DATE","events":[{"headline":"標題","impact":"overall_positive或overall_negative或mixed","summary":"2句說明","winners":[{"industry":"產業","stocks":[{"name":"個股","reason":"原因"}]}],"losers":[{"industry":"產業","stocks":[{"name":"個股","reason":"原因"}]}],"action":{"type":"持有或觀望或減碼","reason":"1句建議"}}]}';
-
-  const prompt = '今天是' + today + '。針對以下' + selected.length + '則新聞事件，分析對' + markets.join('、') + '股市的影響：' + headlines + '。只輸出純JSON一行不要markdown，格式：' + schema.replace('DATE', today) + '。每個事件winners和losers各1到2個產業，每個產業1到2支個股，summary限30字，reason限15字。';
+  const headlineList = selected.map((n,i) => (i+1) + '. ' + n.headline).join(' | ');
 
   showReportSkeleton();
 
+  // ── 步驟一：綜合摘要（較短，不容易截斷）──
+  const summarySchema = '{"reportDate":"DATE","overallSentiment":"bullish或bearish或neutral","marketOutlook":"2句整體研判","topWinners":[{"industry":"最受益產業","stocks":["個股1","個股2"],"reason":"原因"}],"topLosers":[{"industry":"最受害產業","stocks":["個股1","個股2"],"reason":"原因"}],"keyActions":[{"type":"持有或觀望或減碼","target":"適用對象","reason":"建議"}]}';
+  const summaryPrompt = '今天是' + today + '。以下是' + selected.length + '則重要新聞：' + headlineList + '。請綜合分析對' + markets.join('、') + '股市的整體影響，給出跨事件的產業影響地圖與操作建議。只輸出純JSON一行不要markdown，格式：' + summarySchema.replace('DATE', today) + '。topWinners和topLosers各2到3個，keyActions 2到3條，reason限20字。';
+
+  // ── 步驟二：個別事件分析（每次只分析2則，分批處理）──
+  const eventSchema = '{"headline":"標題","impact":"overall_positive或overall_negative或mixed","summary":"1句說明","winners":[{"industry":"產業","stocks":[{"name":"個股","reason":"原因"}]}],"losers":[{"industry":"產業","stocks":[{"name":"個股","reason":"原因"}]}],"action":{"type":"持有或觀望或減碼","reason":"1句"}}';
+
   try {
-    const raw = await callGemini(prompt);
-    const parsed = parseJSON(raw);
-    renderReport(parsed);
+    // Run summary first
+    const summaryRaw = await callGemini(summaryPrompt);
+    const summaryParsed = parseJSON(summaryRaw);
+
+    // Run individual analysis in batches of 2
+    const batchSize = 2;
+    const eventResults = [];
+    for (let i = 0; i < selected.length; i += batchSize) {
+      const batch = selected.slice(i, i + batchSize);
+      const batchHeadlines = batch.map((n,j) => (j+1) + '. ' + n.headline).join(' | ');
+      const eventPrompt = '今天是' + today + '。針對以下' + batch.length + '則新聞，逐一分析對' + markets.join('、') + '股市的影響：' + batchHeadlines + '。輸出純JSON陣列一行不要markdown，格式：[' + eventSchema + ']。每則winners和losers各1個，stocks各1到2支，summary限20字，reason限12字。';
+      try {
+        const batchRaw = await callGemini(eventPrompt);
+        const batchParsed = parseJSON(batchRaw);
+        const arr = Array.isArray(batchParsed) ? batchParsed : (batchParsed.events || [batchParsed]);
+        eventResults.push(...arr);
+      } catch(be) {
+        // If batch fails, add placeholder
+        batch.forEach(n => eventResults.push({ headline: n.headline, impact: 'mixed', summary: '分析失敗，請重試', winners: [], losers: [], action: null }));
+      }
+      if (i + batchSize < selected.length) await sleep(1500); // Rate limit buffer
+    }
+
+    // Combine and render
+    const fullReport = {
+      reportDate: today,
+      newsCount: selected.length,
+      summary: summaryParsed,
+      events: eventResults,
+      rawNews: selected.map(n => ({ id: n.id, headline: n.headline, category: n.category, impact: n.impact }))
+    };
+
+    renderReport(fullReport);
+    saveReportToStorage(fullReport);
+
   } catch(e) {
     errBox.textContent = '分析錯誤：' + e.message;
     errBox.classList.add('active');
     document.getElementById('newsReportArea').innerHTML = '<div class="empty-results"><div class="empty-icon">📊</div>分析失敗，請重試</div>';
   }
   setLoading('analyzeBtn', false, '分析選定事件 →');
+}
+
+// ── SAVE TO LOCALSTORAGE ──
+function saveReportToStorage(report) {
+  try {
+    const key = 'news_history';
+    const existing = JSON.parse(localStorage.getItem(key) || '[]');
+    existing.unshift({ ...report, savedAt: new Date().toISOString() });
+    if (existing.length > 30) existing.splice(30);
+    localStorage.setItem(key, JSON.stringify(existing));
+    console.log('Report saved to localStorage');
+  } catch(e) {
+    console.warn('Failed to save report:', e);
+  }
+  // Also sync to Google Sheets
+  appendToSheet(report);
 }
 
 function showReportSkeleton() {
@@ -726,55 +777,123 @@ function showReportSkeleton() {
 
 function renderReport(data) {
   const events = data.events || [];
-  if (!events.length) {
+  const summary = data.summary || null;
+  if (!events.length && !summary) {
     document.getElementById('newsReportArea').innerHTML = '<div class="empty-results"><div class="empty-icon">📊</div>無分析結果</div>';
     return;
   }
 
   const impactColor = { overall_positive: 'var(--accent)', overall_negative: 'var(--red)', mixed: 'var(--amber)' };
   const impactLabel = { overall_positive: '利多 ▲', overall_negative: '利空 ▼', mixed: '影響混合' };
+  const sentimentColor = { bullish: 'var(--accent)', bearish: 'var(--red)', neutral: 'var(--amber)' };
+  const sentimentLabel = { bullish: '偏多 ▲', bearish: '偏空 ▼', neutral: '中性 ─' };
   const actionClass = { '持有': 'action-hold', '觀望': 'action-wait', '減碼': 'action-reduce' };
   const actionIcon = { '持有': '✓', '觀望': '⏸', '減碼': '↓' };
 
-  let html = `<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);margin-bottom:16px;letter-spacing:0.08em">報告日期：${data.reportDate || new Date().toLocaleDateString('zh-TW')} · ${events.length} 則事件</div>`;
+  let html = '<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);margin-bottom:16px;letter-spacing:0.08em">報告日期：' + (data.reportDate || new Date().toLocaleDateString('zh-TW')) + ' · ' + (data.newsCount || events.length) + ' 則事件</div>';
 
-  events.forEach(ev => {
-    const ic = impactColor[ev.impact] || 'var(--amber)';
-    const il = impactLabel[ev.impact] || ev.impact;
-    html += `<div class="report-event-block">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
-        <div class="report-event-title" style="flex:1;padding-right:12px">${ev.headline}</div>
-        <span style="font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:3px;background:${ic}20;color:${ic};white-space:nowrap;flex-shrink:0">${il}</span>
-      </div>
-      <div class="report-event-summary">${ev.summary || ''}</div>`;
+  // ══ SECTION 1: COMPREHENSIVE SUMMARY ══
+  if (summary) {
+    const sc = sentimentColor[summary.overallSentiment] || 'var(--amber)';
+    const sl = sentimentLabel[summary.overallSentiment] || '─';
+    html += '<div style="background:var(--ink);color:var(--bg);border-radius:8px;padding:16px 18px;margin-bottom:20px">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">';
+    html += '<div style="font-family:var(--mono);font-size:10px;letter-spacing:0.12em;color:#888">◈ 綜合研判</div>';
+    html += '<span style="font-family:var(--mono);font-size:11px;padding:3px 10px;border-radius:3px;background:' + sc + '30;color:' + sc + '">' + sl + '</span>';
+    html += '</div>';
+    html += '<div style="font-size:13px;color:#c8c4b8;line-height:1.75;margin-bottom:14px">' + (summary.marketOutlook || '') + '</div>';
 
-    const winners = ev.winners || [], losers = ev.losers || [];
-    if (winners.length || losers.length) {
-      html += `<div class="impact-grid" style="margin-bottom:10px">`;
-      html += `<div class="impact-col win"><div class="impact-col-title">▲ 受益</div>`;
-      winners.forEach(w => {
-        html += `<div style="margin-bottom:6px"><div style="font-family:var(--mono);font-size:10px;font-weight:500;color:var(--accent)">${w.industry}</div>`;
-        (w.stocks||[]).forEach(s => { html += `<div class="impact-stock"><span class="impact-stock-name">${s.name}</span><span style="font-size:10px;color:var(--ink3);margin-left:5px">${s.reason||''}</span></div>`; });
-        html += `</div>`;
+    // Winners & Losers in summary
+    const tw = summary.topWinners || [], tl = summary.topLosers || [];
+    if (tw.length || tl.length) {
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">';
+      html += '<div style="background:rgba(45,90,61,0.25);border-radius:6px;padding:10px 12px">';
+      html += '<div style="font-family:var(--mono);font-size:10px;color:#4ade80;margin-bottom:8px">▲ 整體受益</div>';
+      tw.forEach(w => {
+        html += '<div style="margin-bottom:6px"><div style="font-family:var(--mono);font-size:11px;font-weight:500;color:#e8f0ea">' + w.industry + '</div>';
+        html += '<div style="font-size:10px;color:#888;margin:2px 0">' + (w.reason||'') + '</div>';
+        html += '<div style="font-size:11px;color:#4ade80">' + (w.stocks||[]).join('、') + '</div></div>';
       });
-      html += `</div><div class="impact-col lose"><div class="impact-col-title">▼ 受害</div>`;
-      losers.forEach(l => {
-        html += `<div style="margin-bottom:6px"><div style="font-family:var(--mono);font-size:10px;font-weight:500;color:var(--red)">${l.industry}</div>`;
-        (l.stocks||[]).forEach(s => { html += `<div class="impact-stock"><span class="impact-stock-name">${s.name}</span><span style="font-size:10px;color:var(--ink3);margin-left:5px">${s.reason||''}</span></div>`; });
-        html += `</div>`;
+      html += '</div>';
+      html += '<div style="background:rgba(163,48,48,0.2);border-radius:6px;padding:10px 12px">';
+      html += '<div style="font-family:var(--mono);font-size:10px;color:#f87171;margin-bottom:8px">▼ 整體受害</div>';
+      tl.forEach(l => {
+        html += '<div style="margin-bottom:6px"><div style="font-family:var(--mono);font-size:11px;font-weight:500;color:#fdf0f0">' + l.industry + '</div>';
+        html += '<div style="font-size:10px;color:#888;margin:2px 0">' + (l.reason||'') + '</div>';
+        html += '<div style="font-size:11px;color:#f87171">' + (l.stocks||[]).join('、') + '</div></div>';
       });
-      html += `</div></div>`;
+      html += '</div></div>';
     }
 
-    if (ev.action) {
-      const ac = actionClass[ev.action.type] || 'action-wait';
-      const ai = actionIcon[ev.action.type] || '⏸';
-      html += `<div class="action-box ${ac}" style="margin-top:8px"><div class="action-label">${ai} ${ev.action.type}</div><div class="action-content">${ev.action.reason}</div></div>`;
+    // Key actions in summary
+    const ka = summary.keyActions || [];
+    if (ka.length) {
+      ka.forEach(a => {
+        const ac = actionClass[a.type] || 'action-wait';
+        const ai = actionIcon[a.type] || '⏸';
+        html += '<div style="border-left:2px solid ' + (a.type==='持有'?'#4ade80':a.type==='減碼'?'#f87171':'#c17d0a') + ';padding:6px 10px;margin-bottom:6px">';
+        html += '<span style="font-family:var(--mono);font-size:10px;color:' + (a.type==='持有'?'#4ade80':a.type==='減碼'?'#f87171':'#c17d0a') + '">' + ai + ' ' + a.type + '｜' + (a.target||'') + '</span>';
+        html += '<div style="font-size:12px;color:#c8c4b8;margin-top:3px">' + (a.reason||'') + '</div></div>';
+      });
     }
-    html += `</div>`;
-  });
+    html += '</div>';
+  }
+
+  // ══ SECTION 2: INDIVIDUAL EVENTS (collapsible) ══
+  if (events.length) {
+    html += '<div style="font-family:var(--mono);font-size:10px;letter-spacing:0.12em;color:var(--ink3);margin-bottom:12px;display:flex;align-items:center;gap:8px">個別事件分析 <span style="flex:1;height:1px;background:var(--rule)"></span></div>';
+
+    events.forEach((ev, idx) => {
+      const ic = impactColor[ev.impact] || 'var(--amber)';
+      const il = impactLabel[ev.impact] || '─';
+      const cardId = 'ev-card-' + idx;
+
+      html += '<div class="report-event-block" style="margin-bottom:8px">';
+      html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;cursor:pointer" onclick="toggleEventCard(\'' + cardId + '\')">';
+      html += '<div style="flex:1;padding-right:8px"><div class="report-event-title">' + (ev.headline||'') + '</div>';
+      html += '<div style="font-size:11px;color:var(--ink3);margin-top:3px">' + (ev.summary||'') + '</div></div>';
+      html += '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">';
+      html += '<span style="font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:3px;background:' + ic + '20;color:' + ic + '">' + il + '</span>';
+      html += '<span style="font-family:var(--mono);font-size:12px;color:var(--ink3)" id="' + cardId + '-arrow">▼</span></div></div>';
+
+      // Collapsible body
+      html += '<div id="' + cardId + '" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--rule2)">';
+      const winners = ev.winners || [], losers = ev.losers || [];
+      if (winners.length || losers.length) {
+        html += '<div class="impact-grid" style="margin-bottom:8px">';
+        html += '<div class="impact-col win"><div class="impact-col-title">▲ 受益</div>';
+        winners.forEach(w => {
+          html += '<div style="margin-bottom:5px"><div style="font-family:var(--mono);font-size:10px;font-weight:500;color:var(--accent)">' + w.industry + '</div>';
+          (w.stocks||[]).forEach(s => { html += '<div class="impact-stock"><span class="impact-stock-name">' + s.name + '</span><span style="font-size:10px;color:var(--ink3);margin-left:5px">' + (s.reason||'') + '</span></div>'; });
+          html += '</div>';
+        });
+        html += '</div><div class="impact-col lose"><div class="impact-col-title">▼ 受害</div>';
+        losers.forEach(l => {
+          html += '<div style="margin-bottom:5px"><div style="font-family:var(--mono);font-size:10px;font-weight:500;color:var(--red)">' + l.industry + '</div>';
+          (l.stocks||[]).forEach(s => { html += '<div class="impact-stock"><span class="impact-stock-name">' + s.name + '</span><span style="font-size:10px;color:var(--ink3);margin-left:5px">' + (s.reason||'') + '</span></div>'; });
+          html += '</div>';
+        });
+        html += '</div></div>';
+      }
+      if (ev.action) {
+        const ac = actionClass[ev.action.type] || 'action-wait';
+        const ai = actionIcon[ev.action.type] || '⏸';
+        html += '<div class="action-box ' + ac + '"><div class="action-label">' + ai + ' ' + ev.action.type + '</div><div class="action-content">' + ev.action.reason + '</div></div>';
+      }
+      html += '</div></div>';
+    });
+  }
 
   document.getElementById('newsReportArea').innerHTML = html;
+}
+
+function toggleEventCard(id) {
+  const card = document.getElementById(id);
+  const arrow = document.getElementById(id + '-arrow');
+  if (!card) return;
+  const isOpen = card.style.display !== 'none';
+  card.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.textContent = isOpen ? '▼' : '▲';
 }
 
 // ── AUTO REPORT ──
@@ -826,6 +945,122 @@ window.addEventListener('DOMContentLoaded', () => {
   loadPrefs();
 });
 
+
+
+// ══════════════════════════════════════════
+// GOOGLE SHEETS INTEGRATION
+// ══════════════════════════════════════════
+
+// ── FILL IN YOUR CREDENTIALS HERE ──
+const SHEETS_CONFIG = {
+  spreadsheetId: '1Nw-qGajPuk0UEo6bbFtkOwenzw8JmqVyqkMqcNxlgsc',
+  clientEmail: 'investment-screener@investment-screener-498508.iam.gserviceaccount.com',   // <-- 填入 client_email
+  privateKey: '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDPiUiLtHDUvEmf\nwWlt11mZnmgGM+Rjf3hMUs1tKV44Ga2ch67e9z4lvYpS/9EUE3joybcHfU4nb5lT\ndRqcn0eFZfLPNfrPgnQ5VZp+Y/TmNeN1spRaFwd3BMTK8bPbxBNNcp1GIovXbycK\n+N50nBGwUTP1M7+gW/CeK4KRwv6H/IEvC41okIQKELtqpvZOeux0fYu592kthU+T\n8tS9CUgzxD0A2byFjMVCPSy7heqpBMSEGl/qxRqt5VHgLp0xF0wr1dMgW5+b+sBx\nWAz1jqeGMPuNWi5ppu4AkaBwEPK2/N9+TukGkKp1gASlioEeq8HQABO6U/7ENWjb\nbzVFK36hAgMBAAECggEAH4iT/HTjyfx7+/6mzCOdqnZDsbbpG7x5ZQYVzuGAvpRu\n6SrtRVVFh6AnktnqL5s6fWByONHvcerb3gRGkV1a6tLP6cUhbAM92/JSVvmiyJHl\nPZ5vOnW8/Xa83Ls3TAvxr4xb3Oq7MHY5Sp+q1AayDLDMl2llU0fKT+DQ5jXod8p+\nJ2wUhgzzEqa6LKu6eY8LrFCoQStgmMrgsXep9WW8TkG4tI5EGWGi1JJRWpfJGjZZ\nYVO1RXEw5kME4bEP5M/SXnqKuw6/cd6e7jB1iRZaF/6aoX198kqSsRjsinkmo8Co\nmGt1S1jBJmyBoedNw84lmZd649XAnWyllTi8Csz5iwKBgQDvFd42rm1js5rlhArU\nLKIZIkN1bXboPjZtVHn99Qh9dX8q9+iqomeBsxnJamB0GZuEgnhYCZdW8qsSaWhJ\nParXtn9nPjhBljmula06oeuAxE2yW0C4jYpabP/yojYDHuEzY/M9GzisEkOz0huq\ng/oyUBUbFXBnAC8I5x+sHLcy2wKBgQDeOAVrV4U9QLhsv1wlSXaNrSqKURZoI5Lw\nRp5MTA247Fjd7OlkVaqKFbWX8/Q+X+G/SddecLJoKMO6fYqw2N6xslVDcQR3OOY8\nhHnMZ21WzCc7+qopabIk5KIckkiuo9ytgIa0yhjjYovIgmkITewIT2iIFajZtR/b\nH1WIKtcnMwKBgCqR1TgdRKLs9taI9TikHdSl0icVb4eYlC5RTUtXlsRn6FWpQIcp\nVY61ahD/3N6vNI6agH0EcCruGGG13Pi1fzbbasHiRTgAXJLmWarH69vImCD6uIJj\nyU+ieswj78QMeoKg+E1YDHYu5lkdPwnUZ/cPZUKmRZZBZR6LsIr/rerjAoGAXHnB\nv5bvarspRJAp/5Zf0Lu0jVULVxEe0AEDVUr9Fuy8WraBtfB0hPxd0ruB9AcgweMv\nzixmAjScp1ohQlEt85L8KpG4wwiZv6t9qFOOS+WvmiVJdOx4ZyQCVpOFza+BYW6w\nIEJOMypKc4nZvcv3osmw/ZjN6LOYay7SAFWbrcMCgYEAiW96QHlEaGcYKS2GR66Q\nTHO3HwBphzo5MKJo9TG9LJD2ldASYrP1B+8Dsxu1dNXNvXvLxmz6N11ia7o499Gt\no/Ia4SFS2JZn7ueIChWOrGVA65+XfD2YadrSx/vyYjZ4tjNGn0mvNQfgQIg28cDe\nfkwa6eDqkD9EbyXI/961xh4=\n-----END PRIVATE KEY-----\n',     // <-- 填入 private_key（整段含 \n）
+  sheetName: 'Sheet1'
+};
+
+async function getAccessToken() {
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const payload = {
+    iss: SHEETS_CONFIG.clientEmail,
+    scope: 'https://www.googleapis.com/auth/spreadsheets',
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: now + 3600,
+    iat: now
+  };
+
+  const b64 = obj => btoa(JSON.stringify(obj)).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+  const signingInput = b64(header) + '.' + b64(payload);
+
+  // Import private key
+  const pemBody = SHEETS_CONFIG.privateKey
+    .replace('-----BEGIN PRIVATE KEY-----', '')
+    .replace('-----END PRIVATE KEY-----', '')
+    .replace(/\\n/g, '')
+    .replace(/\n/g, '')
+    .trim();
+
+  const keyData = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
+  const cryptoKey = await crypto.subtle.importKey(
+    'pkcs8', keyData.buffer,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false, ['sign']
+  );
+
+  const encoder = new TextEncoder();
+  const signatureBuffer = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5', cryptoKey, encoder.encode(signingInput)
+  );
+  const signature = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)))
+    .replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+
+  const jwt = signingInput + '.' + signature;
+
+  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=' + jwt
+  });
+  const tokenData = await tokenRes.json();
+  if (!tokenData.access_token) throw new Error('無法取得 Google token：' + JSON.stringify(tokenData));
+  return tokenData.access_token;
+}
+
+async function appendToSheet(report) {
+  if (SHEETS_CONFIG.privateKey === 'FILL_PRIVATE_KEY') {
+    console.log('Sheets not configured, skipping sync');
+    return;
+  }
+  try {
+    const token = await getAccessToken();
+    const summary = report.summary || {};
+    const winners = (summary.topWinners || []).map(w => w.industry).join('、');
+    const losers = (summary.topLosers || []).map(l => l.industry).join('、');
+    const now = new Date();
+    const row = [
+      now.toLocaleDateString('zh-TW'),
+      now.toLocaleTimeString('zh-TW'),
+      report.newsCount || (report.events||[]).length,
+      summary.overallSentiment || '',
+      summary.marketOutlook || '',
+      winners,
+      losers,
+      JSON.stringify(report).slice(0, 4000)
+    ];
+
+    const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SHEETS_CONFIG.spreadsheetId +
+      '/values/' + encodeURIComponent(SHEETS_CONFIG.sheetName) + '!A1:append?valueInputOption=USER_ENTERED';
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: [row] })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || 'Sheets write failed');
+    }
+    console.log('✓ Report saved to Google Sheets');
+    showSheetSyncStatus('✓ 已同步到 Google Sheets');
+  } catch(e) {
+    console.warn('Sheets sync failed:', e.message);
+    showSheetSyncStatus('⚠ Sheets 同步失敗：' + e.message);
+  }
+}
+
+function showSheetSyncStatus(msg) {
+  let el = document.getElementById('sheetSyncStatus');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'sheetSyncStatus';
+    el.style.cssText = 'font-family:var(--mono);font-size:10px;color:var(--ink3);margin-top:8px;padding:6px 10px;border-radius:4px;background:var(--accent-light)';
+    const area = document.getElementById('newsReportArea');
+    if (area) area.parentNode.insertBefore(el, area);
+  }
+  el.textContent = msg;
+  setTimeout(() => { if (el) el.textContent = ''; }, 5000);
+}
 
 // ── GEMINI CALL ──
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
