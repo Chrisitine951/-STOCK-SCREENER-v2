@@ -265,6 +265,7 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
     <div class="panel">
       <div class="panel-label">篩選結果</div>
       <div class="error-box" id="screenerError"></div>
+      <div id="debugBox" style="display:none;background:#1a1a18;color:#4ade80;font-family:var(--mono);font-size:10px;padding:12px;border-radius:4px;margin-bottom:12px;white-space:pre-wrap;max-height:200px;overflow:auto;"></div>
       <div class="summary-box" id="screenerSummary"></div>
       <div class="results-area" id="screenerResults">
         <div class="empty-results"><div class="empty-icon">◈</div>設定條件後點「執行篩選」，AI 將自動產生候選名單</div>
@@ -368,10 +369,35 @@ async function callGemini(prompt) {
 }
 
 function parseJSON(raw) {
-  const clean = raw.replace(/```json|```/g, '').trim();
-  const match = clean.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error('找不到 JSON 格式');
-  return JSON.parse(match[0]);
+  // Show debug
+  const dbg = document.getElementById('debugBox');
+  if (dbg) { dbg.style.display = 'block'; dbg.textContent = 'RAW RESPONSE:\n' + raw.slice(0, 500); }
+
+  // Strip markdown fences
+  let clean = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+
+  // Find outermost { }
+  const start = clean.indexOf('{');
+  const end = clean.lastIndexOf('}');
+  if (start === -1 || end === -1) throw new Error('找不到 JSON 大括號');
+  clean = clean.slice(start, end + 1);
+
+  // Try direct parse
+  try {
+    return JSON.parse(clean);
+  } catch(e1) {
+    // Try fixing common issues: trailing commas, unescaped newlines
+    let fixed = clean
+      .replace(/,\s*([}\]])/g, '$1')   // trailing commas
+      .replace(/\n/g, ' ')              // literal newlines in strings
+      .replace(/\r/g, '');
+    try {
+      return JSON.parse(fixed);
+    } catch(e2) {
+      if (dbg) dbg.textContent += '\n\nCLEAN ATTEMPT:\n' + clean.slice(0, 500);
+      throw new Error('JSON解析失敗：' + e2.message + '（位置附近：' + clean.slice(300, 330) + '）');
+    }
+  }
 }
 
 function setLoading(btnId, loading, label) {
@@ -450,6 +476,8 @@ async function runScreener() {
   try {
     const raw = await callGemini(prompt);
     const parsed = parseJSON(raw);
+    const dbg = document.getElementById('debugBox');
+    if (dbg) dbg.style.display = 'none';
     if (!parsed.tw) parsed.tw = [];
     if (!parsed.us) parsed.us = [];
     const sum = document.getElementById('screenerSummary');
