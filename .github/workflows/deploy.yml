@@ -4,20 +4,25 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      
+      - uses: actions/checkout@v4
+
       - name: Inject credentials
         run: |
-          ESCAPED_KEY=$(echo "${{ secrets.SHEETS_PRIVATE_KEY }}" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | tr -d '\n' | sed 's/\\n/\\\\n/g')
+          ESCAPED_KEY=$(printf '%s' "${{ secrets.SHEETS_PRIVATE_KEY }}" | sed 's/\\/\\\\/g; s/|/\\|/g')
           sed -i "s|INJECT_CLIENT_EMAIL|${{ secrets.SHEETS_CLIENT_EMAIL }}|g" index.html
           sed -i "s|INJECT_PRIVATE_KEY|${ESCAPED_KEY}|g" index.html
-      
+
       - name: Deploy to Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./
