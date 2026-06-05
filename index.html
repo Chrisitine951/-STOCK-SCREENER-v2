@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>選股 Prompt 產生器</title>
+<title>投資分析工作台</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Noto+Serif+TC:wght@300;400;500&display=swap');
 
@@ -20,768 +20,552 @@
   --amber: #c17d0a;
   --amber-light: #fdf3dc;
   --red: #a33030;
+  --red-light: #fdf0f0;
+  --blue: #2a4a8a;
+  --blue-light: #e8eef8;
   --mono: 'DM Mono', monospace;
   --serif: 'Noto Serif TC', serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--serif); font-size: 15px; line-height: 1.7; min-height: 100vh; }
 
-body {
-  background: var(--bg);
-  color: var(--ink);
-  font-family: var(--serif);
-  font-size: 15px;
-  line-height: 1.7;
-  min-height: 100vh;
-}
+/* MASTHEAD */
+.masthead { background: var(--ink); color: var(--bg); padding: 16px 40px; display: flex; align-items: center; gap: 24px; }
+.masthead-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.15em; color: #888; }
+.masthead-name { font-family: var(--serif); font-size: 20px; font-weight: 500; color: var(--bg); }
+.masthead-date { font-family: var(--mono); font-size: 11px; color: #666; margin-left: auto; }
 
-/* HEADER */
-.masthead {
-  background: var(--ink);
-  color: var(--bg);
-  padding: 18px 40px;
-  display: flex;
-  align-items: baseline;
-  gap: 24px;
-  border-bottom: 3px solid var(--ink);
-}
-.masthead-title {
-  font-family: var(--mono);
-  font-size: 13px;
-  letter-spacing: 0.15em;
-  color: #c8c4b8;
-}
-.masthead-name {
-  font-family: var(--serif);
-  font-size: 22px;
-  font-weight: 500;
-  color: var(--bg);
-  letter-spacing: 0.02em;
-}
-.masthead-date {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: #888;
-  margin-left: auto;
-}
+/* TOP NAV TABS */
+.nav-tabs { background: var(--paper); border-bottom: 2px solid var(--ink); display: flex; padding: 0 40px; gap: 0; }
+.nav-tab { padding: 14px 28px; font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; cursor: pointer; border: none; background: none; color: var(--ink3); border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+.nav-tab:hover { color: var(--ink); }
+.nav-tab.active { color: var(--ink); border-bottom-color: var(--ink); font-weight: 500; }
+
+/* PAGE */
+.page { display: none; }
+.page.active { display: block; }
 
 /* LAYOUT */
-.layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0;
-  max-width: 1200px;
-  margin: 0 auto;
-  min-height: calc(100vh - 65px);
-}
-
-/* PANELS */
-.panel {
-  padding: 32px 36px;
-  border-right: 1px solid var(--rule);
-}
+.layout { display: grid; grid-template-columns: 1fr 1fr; max-width: 1280px; margin: 0 auto; min-height: calc(100vh - 105px); }
+.panel { padding: 28px 32px; border-right: 1px solid var(--rule); }
 .panel:last-child { border-right: none; }
-
-.panel-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  color: var(--ink3);
-  text-transform: uppercase;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--rule);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.panel-label::before {
-  content: '';
-  display: inline-block;
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-}
+.panel-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; color: var(--ink3); text-transform: uppercase; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; gap: 8px; }
+.panel-label::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
 
 /* MARKET TABS */
-.market-tabs {
-  display: flex;
-  gap: 0;
-  margin-bottom: 24px;
-  border: 1px solid var(--rule);
-  border-radius: 4px;
-  overflow: hidden;
-}
-.market-tab {
-  flex: 1;
-  padding: 9px 0;
-  text-align: center;
-  font-family: var(--mono);
-  font-size: 12px;
-  cursor: pointer;
-  background: transparent;
-  border: none;
-  border-right: 1px solid var(--rule);
-  color: var(--ink3);
-  transition: all 0.15s;
-}
+.market-tabs { display: flex; margin-bottom: 22px; border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+.market-tab { flex: 1; padding: 9px 0; text-align: center; font-family: var(--mono); font-size: 11px; cursor: pointer; background: transparent; border: none; border-right: 1px solid var(--rule); color: var(--ink3); transition: all 0.15s; }
 .market-tab:last-child { border-right: none; }
 .market-tab:hover { background: var(--rule2); color: var(--ink); }
 .market-tab.active { background: var(--ink); color: var(--bg); }
 
-/* CRITERIA SECTIONS */
-.criteria-section {
-  margin-bottom: 24px;
-}
-.criteria-heading {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  color: var(--accent);
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.criteria-heading::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--rule);
-}
-
-.criteria-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 0;
-  border-bottom: 1px solid var(--rule2);
-}
+/* CRITERIA */
+.criteria-section { margin-bottom: 22px; }
+.criteria-heading { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.criteria-heading::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+.criteria-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--rule2); }
 .criteria-row:last-child { border-bottom: none; }
-
-.criteria-label {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--ink2);
-  width: 120px;
-  flex-shrink: 0;
-}
-
-.criteria-val {
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ink);
-  background: var(--accent-light);
-  padding: 2px 8px;
-  border-radius: 3px;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.1s;
-  min-width: 70px;
-  text-align: center;
-}
+.criteria-label { font-family: var(--mono); font-size: 11px; color: var(--ink2); width: 120px; flex-shrink: 0; }
+.criteria-val { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--ink); background: var(--accent-light); padding: 2px 8px; border-radius: 3px; cursor: pointer; border: 1px solid transparent; transition: all 0.1s; min-width: 70px; text-align: center; }
 .criteria-val:hover { border-color: var(--accent); }
-.criteria-val.editing {
-  background: white;
-  border-color: var(--accent);
-  outline: none;
-  color: var(--ink);
-}
+.criteria-val.editing { background: white; border-color: var(--accent); outline: none; }
 
-/* EXTRA CRITERIA */
-.extra-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 12px;
-}
-.extra-input {
-  flex: 1;
-  font-family: var(--mono);
-  font-size: 12px;
-  background: white;
-  border: 1px solid var(--rule);
-  border-radius: 4px;
-  padding: 7px 10px;
-  color: var(--ink);
-  outline: none;
-}
-.extra-input:focus { border-color: var(--accent); }
-.extra-input::placeholder { color: var(--ink3); }
+/* INPUTS */
+.field-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; color: var(--ink3); text-transform: uppercase; margin-bottom: 6px; margin-top: 16px; }
+.text-input { width: 100%; font-family: var(--mono); font-size: 12px; background: white; border: 1px solid var(--rule); border-radius: 4px; padding: 9px 12px; color: var(--ink); outline: none; transition: border-color 0.15s; }
+.text-input:focus { border-color: var(--accent); }
+.text-input::placeholder { color: var(--ink3); }
+textarea.text-input { resize: vertical; line-height: 1.7; }
 
-/* GENERATE BUTTON */
-.gen-btn {
-  width: 100%;
-  padding: 13px;
-  background: var(--ink);
-  color: var(--bg);
-  border: none;
-  font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  cursor: pointer;
-  margin-top: 24px;
-  border-radius: 4px;
-  transition: opacity 0.15s;
-}
+/* TAG SELECTOR */
+.tag-group { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+.tag-btn { font-family: var(--mono); font-size: 11px; padding: 4px 10px; border: 1px solid var(--rule); border-radius: 3px; background: white; color: var(--ink2); cursor: pointer; transition: all 0.12s; }
+.tag-btn:hover { border-color: var(--ink2); color: var(--ink); }
+.tag-btn.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* BUTTONS */
+.gen-btn { width: 100%; padding: 12px; background: var(--ink); color: var(--bg); border: none; font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; cursor: pointer; margin-top: 22px; border-radius: 4px; transition: opacity 0.15s; }
 .gen-btn:hover { opacity: 0.85; }
-
-/* PROMPT BOX */
-.prompt-box {
-  background: white;
-  border: 1px solid var(--rule);
-  border-radius: 4px;
-  padding: 16px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--ink2);
-  line-height: 1.8;
-  white-space: pre-wrap;
-  min-height: 120px;
-  margin-bottom: 12px;
-  display: none;
-}
-.prompt-box.active { display: block; }
-
-.copy-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 10px;
-  background: var(--accent);
-  color: white;
-  border: none;
-  font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-  border-radius: 4px;
-  margin-bottom: 20px;
-  transition: opacity 0.15s;
-  display: none;
-}
-.copy-btn.active { display: flex; }
+.copy-btn { display: none; width: 100%; padding: 10px; background: var(--accent); color: white; border: none; font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; cursor: pointer; border-radius: 4px; margin-top: 10px; transition: opacity 0.15s; }
+.copy-btn.active { display: block; }
 .copy-btn:hover { opacity: 0.88; }
 .copy-btn.copied { background: var(--ink3); }
+.parse-btn { width: 100%; padding: 11px; background: transparent; border: 1px solid var(--ink); color: var(--ink); font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; cursor: pointer; border-radius: 4px; margin-top: 10px; transition: all 0.15s; }
+.parse-btn:hover { background: var(--ink); color: var(--bg); }
 
-.step-hint {
-  background: var(--amber-light);
-  border-left: 3px solid var(--amber);
-  padding: 12px 16px;
-  font-size: 13px;
-  color: var(--ink2);
-  border-radius: 0 4px 4px 0;
-  margin-bottom: 20px;
-  line-height: 1.7;
-  display: none;
-}
+/* PROMPT BOX */
+.prompt-box { background: white; border: 1px solid var(--rule); border-radius: 4px; padding: 14px; font-family: var(--mono); font-size: 11px; color: var(--ink2); line-height: 1.8; white-space: pre-wrap; min-height: 100px; margin-top: 16px; display: none; }
+.prompt-box.active { display: block; }
+
+/* HINT */
+.step-hint { background: var(--amber-light); border-left: 3px solid var(--amber); padding: 10px 14px; font-size: 12px; color: var(--ink2); border-radius: 0 4px 4px 0; margin-top: 10px; display: none; line-height: 1.7; }
 .step-hint.active { display: block; }
-.step-hint strong { color: var(--amber); font-weight: 500; }
+.step-hint strong { color: var(--amber); }
 
-/* PASTE AREA */
-.paste-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: var(--ink3);
-  margin-bottom: 8px;
-  text-transform: uppercase;
-}
-.paste-area {
-  width: 100%;
-  min-height: 140px;
-  background: white;
-  border: 1px solid var(--rule);
-  border-radius: 4px;
-  padding: 14px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--ink);
-  resize: vertical;
-  outline: none;
-  line-height: 1.7;
-  transition: border-color 0.15s;
-}
+/* PASTE */
+.paste-area { width: 100%; min-height: 130px; background: white; border: 1px solid var(--rule); border-radius: 4px; padding: 12px; font-family: var(--mono); font-size: 11px; color: var(--ink); resize: vertical; outline: none; line-height: 1.7; transition: border-color 0.15s; }
 .paste-area:focus { border-color: var(--accent); }
 .paste-area::placeholder { color: var(--ink3); }
 
-.parse-btn {
-  width: 100%;
-  padding: 11px;
-  background: transparent;
-  border: 1px solid var(--ink);
-  color: var(--ink);
-  font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-  border-radius: 4px;
-  margin-top: 10px;
-  transition: all 0.15s;
-}
-.parse-btn:hover { background: var(--ink); color: var(--bg); }
-
 /* RESULTS */
-.results-area { margin-top: 24px; }
+.results-area { margin-top: 20px; }
+.result-section-title { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--ink3); text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.result-section-title::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
 
-.result-section-title {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: var(--ink3);
-  text-transform: uppercase;
-  margin-bottom: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.result-section-title::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--rule);
-}
-
-.stock-card {
-  background: var(--paper);
-  border: 1px solid var(--rule);
-  border-radius: 6px;
-  padding: 16px 18px;
-  margin-bottom: 10px;
-  transition: border-color 0.15s;
-}
+/* STOCK CARDS */
+.stock-card { background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 16px; margin-bottom: 10px; }
 .stock-card:hover { border-color: rgba(26,26,24,0.2); }
-
-.card-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 8px;
-}
-.ticker-sym {
-  font-family: var(--mono);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--ink);
-}
-.ticker-ind {
-  font-size: 12px;
-  color: var(--ink3);
-  font-family: var(--mono);
-  margin-top: 2px;
-}
-.badge {
-  font-family: var(--mono);
-  font-size: 10px;
-  padding: 3px 8px;
-  border-radius: 3px;
-  letter-spacing: 0.04em;
-}
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.ticker-sym { font-family: var(--mono); font-size: 14px; font-weight: 500; }
+.ticker-ind { font-size: 11px; color: var(--ink3); font-family: var(--mono); margin-top: 1px; }
+.badge { font-family: var(--mono); font-size: 10px; padding: 3px 8px; border-radius: 3px; letter-spacing: 0.04em; }
 .badge-value { background: var(--accent-light); color: var(--accent); }
-.badge-growth { background: #e8eef8; color: #2a4a8a; }
+.badge-growth { background: var(--blue-light); color: var(--blue); }
 .badge-recovery { background: var(--amber-light); color: var(--amber); }
-
-.metrics-row {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-.metric-tag {
-  font-family: var(--mono);
-  font-size: 10px;
-  padding: 2px 7px;
-  background: white;
-  border: 1px solid var(--rule);
-  border-radius: 3px;
-  color: var(--ink2);
-}
+.metrics-row { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.metric-tag { font-family: var(--mono); font-size: 10px; padding: 2px 7px; background: white; border: 1px solid var(--rule); border-radius: 3px; color: var(--ink2); }
 .metric-tag span { color: var(--ink); font-weight: 500; }
+.card-desc { font-size: 12px; color: var(--ink2); line-height: 1.75; margin-bottom: 6px; }
+.card-risk { font-family: var(--mono); font-size: 11px; color: var(--red); opacity: 0.8; }
+.score-row { display: flex; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--rule2); }
+.score-item { flex: 1; }
+.score-name { font-family: var(--mono); font-size: 9px; color: var(--ink3); letter-spacing: 0.06em; margin-bottom: 3px; }
+.score-track { height: 3px; background: var(--rule); border-radius: 2px; overflow: hidden; margin-bottom: 2px; }
+.score-fill { height: 100%; border-radius: 2px; }
+.score-num { font-family: var(--mono); font-size: 10px; color: var(--ink2); }
 
-.card-desc {
-  font-size: 12px;
-  color: var(--ink2);
-  line-height: 1.75;
-  margin-bottom: 8px;
-}
-.card-risk {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--red);
-  opacity: 0.8;
-}
-
-.score-row {
-  display: flex;
-  gap: 12px;
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--rule2);
-}
-.score-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.score-name {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--ink3);
-  letter-spacing: 0.06em;
-}
-.score-bar-track {
-  height: 3px;
-  background: var(--rule);
-  border-radius: 2px;
-  overflow: hidden;
-}
-.score-bar-fill {
-  height: 100%;
-  border-radius: 2px;
-}
-.score-num {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--ink2);
-}
-
-.empty-results {
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--ink3);
-  font-family: var(--mono);
-  font-size: 12px;
-  border: 1px dashed var(--rule);
-  border-radius: 6px;
-}
-.empty-results .big { font-size: 28px; margin-bottom: 10px; opacity: 0.3; }
-
-.error-box {
-  background: #fdf0f0;
-  border: 1px solid #f0c0c0;
-  border-radius: 4px;
-  padding: 12px 16px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--red);
-  margin-top: 12px;
-  display: none;
-}
-.error-box.active { display: block; }
-
-.summary-box {
-  background: var(--accent-light);
-  border-left: 3px solid var(--accent);
-  padding: 12px 16px;
-  font-size: 13px;
-  color: var(--ink2);
-  border-radius: 0 4px 4px 0;
-  margin-bottom: 20px;
-  display: none;
-}
+/* EVENT CARDS */
+.event-impact-card { background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; padding: 16px 18px; margin-bottom: 12px; }
+.event-card-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; color: var(--ink3); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
+.impact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.impact-col { border-radius: 6px; padding: 12px 14px; }
+.impact-col.win { background: var(--accent-light); border: 1px solid rgba(45,90,61,0.15); }
+.impact-col.lose { background: var(--red-light); border: 1px solid rgba(163,48,48,0.15); }
+.impact-col-title { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; margin-bottom: 8px; }
+.impact-col.win .impact-col-title { color: var(--accent); }
+.impact-col.lose .impact-col-title { color: var(--red); }
+.impact-stock { font-size: 12px; color: var(--ink2); padding: 3px 0; border-bottom: 1px solid rgba(0,0,0,0.04); display: flex; align-items: baseline; gap: 8px; }
+.impact-stock:last-child { border-bottom: none; }
+.impact-stock-name { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--ink); }
+.history-box { background: white; border: 1px solid var(--rule); border-radius: 5px; padding: 10px 14px; margin-bottom: 10px; }
+.history-title { font-family: var(--mono); font-size: 10px; color: var(--amber); letter-spacing: 0.08em; margin-bottom: 6px; }
+.history-content { font-size: 12px; color: var(--ink2); line-height: 1.75; }
+.action-box { border-radius: 5px; padding: 12px 14px; margin-bottom: 10px; }
+.action-hold { background: var(--accent-light); border-left: 3px solid var(--accent); }
+.action-wait { background: var(--amber-light); border-left: 3px solid var(--amber); }
+.action-reduce { background: var(--red-light); border-left: 3px solid var(--red); }
+.action-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; margin-bottom: 4px; }
+.action-hold .action-label { color: var(--accent); }
+.action-wait .action-label { color: var(--amber); }
+.action-reduce .action-label { color: var(--red); }
+.action-content { font-size: 12px; color: var(--ink2); line-height: 1.7; }
+.summary-box { background: var(--accent-light); border-left: 3px solid var(--accent); padding: 10px 14px; font-size: 13px; color: var(--ink2); border-radius: 0 4px 4px 0; margin-bottom: 16px; display: none; }
 .summary-box.active { display: block; }
+.error-box { background: var(--red-light); border: 1px solid #f0c0c0; border-radius: 4px; padding: 10px 14px; font-family: var(--mono); font-size: 11px; color: var(--red); margin-top: 10px; display: none; }
+.error-box.active { display: block; }
+.empty-results { text-align: center; padding: 40px 20px; color: var(--ink3); font-family: var(--mono); font-size: 12px; border: 1px dashed var(--rule); border-radius: 6px; }
+.empty-icon { font-size: 26px; margin-bottom: 8px; opacity: 0.3; }
 
-/* SCROLLBAR */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 2px; }
+
+  .apikey-bar {
+    background: #111318;
+    border-bottom: 1px solid var(--rule);
+    padding: 9px 40px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .apikey-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--ink3); white-space: nowrap; }
+  .apikey-input {
+    flex: 1; max-width: 360px;
+    background: #1e2128; border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 4px; padding: 6px 12px;
+    color: #c8c4b8; font-family: var(--mono); font-size: 12px; outline: none;
+    transition: border-color 0.15s;
+  }
+  .apikey-input:focus { border-color: var(--accent); }
+  .apikey-input::placeholder { color: #555; }
+  .apikey-status { font-family: var(--mono); font-size: 11px; color: #555; }
+  .apikey-status.ok { color: var(--accent); }
+  .apikey-hint { font-size: 11px; color: #555; margin-left: auto; }
+  .apikey-hint a { color: #6a9fd8; text-decoration: none; }
+
 </style>
 </head>
 <body>
 
 <div class="masthead">
   <div>
-    <div class="masthead-title">◈ STOCK SCREENER</div>
-    <div class="masthead-name">智能選股工作台</div>
+    <div class="masthead-title">◈ INVESTMENT DESK</div>
+    <div class="masthead-name">投資分析工作台</div>
   </div>
   <div class="masthead-date" id="mastDate"></div>
 </div>
 
-<div class="layout">
+<div class="nav-tabs">
+  <button class="nav-tab active" onclick="switchPage('screener')">📋 選股系統</button>
+  <button class="nav-tab" onclick="switchPage('event')">🌐 事件影響分析</button>
+</div>
 
-  <!-- LEFT: PROMPT GENERATOR -->
-  <div class="panel">
-    <div class="panel-label">第一步：設定篩選條件，產生 Prompt</div>
+<div class="apikey-bar">
+  <span class="apikey-label">GEMINI API KEY</span>
+  <input class="apikey-input" id="apiKeyInput" type="password"
+    placeholder="貼上你的 Gemini API Key"
+    oninput="onApiKeyChange(this.value)" />
+  <span class="apikey-status" id="apiKeyStatus">未設定</span>
+  <span class="apikey-hint">取得免費 Key → <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a></span>
+</div>
 
-    <div class="market-tabs">
-      <button class="market-tab active" onclick="setMarket('both')" id="tab-both">🌐 台股 + 美股</button>
-      <button class="market-tab" onclick="setMarket('tw')" id="tab-tw">🇹🇼 台股</button>
-      <button class="market-tab" onclick="setMarket('us')" id="tab-us">🇺🇸 美股</button>
+<!-- ==================== PAGE 1: SCREENER ==================== -->
+<div class="page active" id="page-screener">
+  <div class="layout">
+    <div class="panel">
+      <div class="panel-label">第一步：設定篩選條件，產生 Prompt</div>
+
+      <div class="market-tabs">
+        <button class="market-tab active" onclick="setMarket('both')" id="tab-both">🌐 台股 + 美股</button>
+        <button class="market-tab" onclick="setMarket('tw')" id="tab-tw">🇹🇼 台股</button>
+        <button class="market-tab" onclick="setMarket('us')" id="tab-us">🇺🇸 美股</button>
+      </div>
+
+      <div id="tw-section" class="criteria-section">
+        <div class="criteria-heading">台股條件</div>
+        <div class="criteria-row"><span class="criteria-label">P/B 股價淨值比</span><span class="criteria-val" onclick="editVal(this)">＜ 1.5</span></div>
+        <div class="criteria-row"><span class="criteria-label">ROE 股東報酬率</span><span class="criteria-val" onclick="editVal(this)">＞ 10%</span></div>
+        <div class="criteria-row"><span class="criteria-label">EPS 成長</span><span class="criteria-val" onclick="editVal(this)">近3年穩定</span></div>
+        <div class="criteria-row"><span class="criteria-label">自由現金流</span><span class="criteria-val" onclick="editVal(this)">為正</span></div>
+        <div class="criteria-row"><span class="criteria-label">負債比</span><span class="criteria-val" onclick="editVal(this)">＜ 40%</span></div>
+        <div class="criteria-row"><span class="criteria-label">市值範圍</span><span class="criteria-val" onclick="editVal(this)">30–200億</span></div>
+        <div class="criteria-row"><span class="criteria-label">持股結構</span><span class="criteria-val" onclick="editVal(this)">董監持股高</span></div>
+      </div>
+
+      <div id="us-section" class="criteria-section">
+        <div class="criteria-heading">美股條件</div>
+        <div class="criteria-row"><span class="criteria-label">P/E 本益比</span><span class="criteria-val" onclick="editVal(this)">＜ 15</span></div>
+        <div class="criteria-row"><span class="criteria-label">P/B 股價淨值比</span><span class="criteria-val" onclick="editVal(this)">＜ 2</span></div>
+        <div class="criteria-row"><span class="criteria-label">市值範圍</span><span class="criteria-val" onclick="editVal(this)">$300M–$2B</span></div>
+        <div class="criteria-row"><span class="criteria-label">GF Score</span><span class="criteria-val" onclick="editVal(this)">＞ 80</span></div>
+        <div class="criteria-row"><span class="criteria-label">聰明錢訊號</span><span class="criteria-val" onclick="editVal(this)">內部人買進</span></div>
+        <div class="criteria-row"><span class="criteria-label">分析師覆蓋</span><span class="criteria-val" onclick="editVal(this)">低覆蓋率</span></div>
+      </div>
+
+      <div class="criteria-section">
+        <div class="criteria-heading">額外條件（選填）</div>
+        <input class="text-input" id="extraCriteria" placeholder="例如：偏好半導體、排除金融股、要有股息..." />
+      </div>
+
+      <button class="gen-btn" id="screenerRunBtn" onclick="runScreener()">▶ 執行篩選</button>
+      <div class="prompt-box" id="screenerPromptBox" style="display:none"></div>
     </div>
 
-    <!-- TW CRITERIA -->
-    <div id="tw-section" class="criteria-section">
-      <div class="criteria-heading">台股條件</div>
-      <div class="criteria-row">
-        <span class="criteria-label">P/B 股價淨值比</span>
-        <span class="criteria-val" onclick="editVal(this)">< 1.5</span>
-      </div>
-      <div class="criteria-row">
-        <span class="criteria-label">ROE 股東權益報酬</span>
-        <span class="criteria-val" onclick="editVal(this)">> 10%</span>
-      </div>
-      <div class="criteria-row">
-        <span class="criteria-label">EPS 成長</span>
-        <span class="criteria-val" onclick="editVal(this)">近3年穩定</span>
-      </div>
-      <div class="criteria-row">
-        <span class="criteria-label">自由現金流</span>
-        <span class="criteria-val" onclick="editVal(this)">為正</span>
-      </div>
-      <div class="criteria-row">
-        <span class="criteria-label">負債比</span>
-        <span class="criteria-val" onclick="editVal(this)">< 40%</span>
-      </div>
-      <div class="criteria-row">
-        <span class="criteria-label">市值範圍</span>
-        <span class="criteria-val" onclick="editVal(this)">30–200億</span>
-      </div>
-      <div class="criteria-row">
-        <span class="criteria-label">持股結構</span>
-        <span class="criteria-val" onclick="editVal(this)">董監持股高</span>
-      </div>
-    </div>
-
-    <!-- US CRITERIA -->
-    <div id="us-section" class="criteria-section">
-      <div class="criteria-heading">美股條件</div>
-      <div class="criteria-row">
-        <span class="criteria-label">P/E 本益比</span>
-        <span class="criteria-val" onclick="editVal(this)">< 15</span>
-      </div>
-      <div class="criteria-row">
-        <span class="criteria-label">P/B 股價淨值比</span>
-        <span class="criteria-val" onclick="editVal(this)">< 2</span>
-      </div>
-      <div class="criteria-row">
-        <span class="criteria-label">市值範圍</span>
-        <span class="criteria-val" onclick="editVal(this)">$300M–$2B</span>
-      </div>
-      <div class="criteria-row">
-        <span class="criteria-label">GF Score</span>
-        <span class="criteria-val" onclick="editVal(this)">> 80</span>
-      </div>
-      <div class="criteria-row">
-        <span class="criteria-label">聰明錢訊號</span>
-        <span class="criteria-val" onclick="editVal(this)">內部人買進</span>
-      </div>
-      <div class="criteria-row">
-        <span class="criteria-label">分析師覆蓋</span>
-        <span class="criteria-val" onclick="editVal(this)">低覆蓋率</span>
-      </div>
-    </div>
-
-    <div class="criteria-section">
-      <div class="criteria-heading">額外條件（選填）</div>
-      <input class="extra-input" id="extraCriteria" placeholder="例如：偏好半導體、排除金融股、要有股息..." />
-    </div>
-
-    <button class="gen-btn" onclick="generatePrompt()">▶ 產生 Prompt</button>
-
-    <!-- GENERATED PROMPT -->
-    <div style="margin-top:20px">
-      <div class="prompt-box" id="promptBox"></div>
-      <button class="copy-btn" id="copyBtn" onclick="copyPrompt()">📋 複製 Prompt → 貼到 Claude.ai</button>
-      <div class="step-hint" id="stepHint">
-        <strong>接下來：</strong>點擊上方按鈕複製，然後<strong>開啟新的 Claude.ai 對話</strong>貼上並送出。<br>
-        收到回覆後，把整段 JSON 回應貼到右側欄位，點「解析結果」。
+    <div class="panel">
+      <div class="panel-label">篩選結果</div>
+      <div class="error-box" id="screenerError"></div>
+      <div class="summary-box" id="screenerSummary"></div>
+      <div class="results-area" id="screenerResults">
+        <div class="empty-results"><div class="empty-icon">◈</div>設定條件後點「執行篩選」，AI 將自動產生候選名單</div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- RIGHT: RESULTS -->
-  <div class="panel">
-    <div class="panel-label">第二步：貼上 Claude 回覆，解析成卡片</div>
+<!-- ==================== PAGE 2: EVENT ANALYSIS ==================== -->
+<div class="page" id="page-event">
+  <div class="layout">
+    <div class="panel">
+      <div class="panel-label">第一步：描述事件，產生分析 Prompt</div>
 
-    <div class="paste-label">貼上 Claude.ai 的回覆</div>
-    <textarea class="paste-area" id="pasteArea"
-      placeholder='把 Claude.ai 回覆的整段內容貼在這裡（JSON 格式），然後點「解析結果」...'></textarea>
-    <button class="parse-btn" onclick="parseResults()">解析結果 →</button>
+      <div class="field-label">事件標題</div>
+      <input class="text-input" id="eventTitle" placeholder="例如：Fed 宣布降息 2 碼、中美晶片管制升級、油價暴漲 20%..." />
 
-    <div class="error-box" id="errorBox"></div>
-    <div class="summary-box" id="summaryBox"></div>
-    <div class="results-area" id="resultsArea">
-      <div class="empty-results">
-        <div class="big">◈</div>
-        產生 Prompt → 貼到 Claude.ai → 把回覆貼到上方
+      <div class="field-label">事件類型</div>
+      <div class="tag-group" id="eventTypeGroup">
+        <button class="tag-btn active" onclick="toggleTag(this,'eventTypeGroup')">總經政策</button>
+        <button class="tag-btn" onclick="toggleTag(this,'eventTypeGroup')">地緣政治</button>
+        <button class="tag-btn" onclick="toggleTag(this,'eventTypeGroup')">產業事件</button>
+        <button class="tag-btn" onclick="toggleTag(this,'eventTypeGroup')">原物料</button>
+        <button class="tag-btn" onclick="toggleTag(this,'eventTypeGroup')">匯率外匯</button>
+        <button class="tag-btn" onclick="toggleTag(this,'eventTypeGroup')">企業財報</button>
+      </div>
+
+      <div class="field-label">影響市場</div>
+      <div class="tag-group" id="marketGroup">
+        <button class="tag-btn active" onclick="toggleTag(this,'marketGroup')">台股</button>
+        <button class="tag-btn active" onclick="toggleTag(this,'marketGroup')">美股</button>
+        <button class="tag-btn" onclick="toggleTag(this,'marketGroup')">全球股市</button>
+      </div>
+
+      <div class="field-label">我想了解的方向（可複選）</div>
+      <div class="tag-group" id="focusGroup">
+        <button class="tag-btn active" onclick="toggleTag(this,'focusGroup')">受益產業 + 個股</button>
+        <button class="tag-btn active" onclick="toggleTag(this,'focusGroup')">受害產業 + 個股</button>
+        <button class="tag-btn active" onclick="toggleTag(this,'focusGroup')">歷史類似事件</button>
+        <button class="tag-btn active" onclick="toggleTag(this,'focusGroup')">操作建議</button>
+      </div>
+
+      <div class="field-label">補充說明（選填）</div>
+      <textarea class="text-input" id="eventDetail" rows="3" placeholder="例如：我持有台積電、聯發科，想知道對我的持倉影響..."></textarea>
+
+      <button class="gen-btn" id="eventRunBtn" onclick="runEventAnalysis()">▶ 執行事件分析</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-label">事件分析報告</div>
+      <div class="error-box" id="eventError"></div>
+      <div class="results-area" id="eventResults">
+        <div class="empty-results"><div class="empty-icon">🌐</div>填入事件後點「執行事件分析」，AI 將自動生成影響報告</div>
       </div>
     </div>
   </div>
-
 </div>
 
 <script>
-let currentMarket = 'both';
-
 document.getElementById('mastDate').textContent = new Date().toLocaleDateString('zh-TW', {year:'numeric',month:'long',day:'numeric'});
 
+// ── API KEY ──
+function getApiKey() { return (document.getElementById('apiKeyInput')?.value || '').trim(); }
+function onApiKeyChange(val) {
+  const status = document.getElementById('apiKeyStatus');
+  const trimmed = val.trim();
+  if (trimmed.length > 20) {
+    status.textContent = '✓ 已設定';
+    status.className = 'apikey-status ok';
+    localStorage.setItem('screener_api_key', trimmed);
+  } else if (trimmed.length > 0) {
+    status.textContent = '格式有誤';
+    status.className = 'apikey-status';
+  } else {
+    status.textContent = '未設定';
+    status.className = 'apikey-status';
+  }
+}
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('screener_api_key');
+  if (saved) { const inp = document.getElementById('apiKeyInput'); if (inp) { inp.value = saved; onApiKeyChange(saved); } }
+});
+
+// ── GEMINI CALL ──
+async function callGemini(prompt) {
+  const key = getApiKey();
+  if (!key || key.length < 10) throw new Error('請先設定 Gemini API Key');
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${key}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 4000 }
+    })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+  if (!data.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error('回應格式異常');
+  return data.candidates[0].content.parts[0].text;
+}
+
+function parseJSON(raw) {
+  const clean = raw.replace(/```json|```/g, '').trim();
+  const match = clean.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('找不到 JSON 格式');
+  return JSON.parse(match[0]);
+}
+
+function setLoading(btnId, loading, label) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.textContent = loading ? '⏳ 分析中...' : label;
+}
+
+// ── PAGE SWITCH ──
+function switchPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── MARKET TOGGLE ──
+let currentMarket = 'both';
 function setMarket(m) {
   currentMarket = m;
-  ['both','tw','us'].forEach(k => {
-    document.getElementById('tab-' + k).classList.toggle('active', k === m);
-  });
+  ['both','tw','us'].forEach(k => document.getElementById('tab-' + k).classList.toggle('active', k === m));
   document.getElementById('tw-section').style.display = m === 'us' ? 'none' : 'block';
   document.getElementById('us-section').style.display = m === 'tw' ? 'none' : 'block';
 }
 
+// ── EDITABLE VALUES ──
 function editVal(el) {
-  const current = el.textContent;
-  el.contentEditable = 'true';
-  el.classList.add('editing');
-  el.focus();
-  const range = document.createRange();
-  range.selectNodeContents(el);
-  window.getSelection().removeAllRanges();
-  window.getSelection().addRange(range);
+  el.contentEditable = 'true'; el.classList.add('editing'); el.focus();
+  const range = document.createRange(); range.selectNodeContents(el);
+  window.getSelection().removeAllRanges(); window.getSelection().addRange(range);
   el.onblur = () => { el.contentEditable = 'false'; el.classList.remove('editing'); };
   el.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } };
 }
 
+// ── TAG TOGGLE ──
+function toggleTag(el, groupId) { el.classList.toggle('active'); }
+function getActiveTags(groupId) {
+  return Array.from(document.querySelectorAll(`#${groupId} .tag-btn.active`)).map(b => b.textContent.trim());
+}
+
+// ── SCREENER ──
 function getCriteria() {
-  const vals = (section) => {
-    const rows = document.querySelectorAll(`#${section}-section .criteria-row`);
-    return Array.from(rows).map(r => {
-      const label = r.querySelector('.criteria-label').textContent.trim();
-      const val = r.querySelector('.criteria-val').textContent.trim();
-      return `${label}：${val}`;
-    }).join('、');
-  };
+  const vals = (section) => Array.from(document.querySelectorAll(`#${section}-section .criteria-row`))
+    .map(r => `${r.querySelector('.criteria-label').textContent.trim()}：${r.querySelector('.criteria-val').textContent.trim()}`).join('、');
   return { tw: vals('tw'), us: vals('us') };
 }
 
-function generatePrompt() {
+async function runScreener() {
+  const errBox = document.getElementById('screenerError');
+  errBox.classList.remove('active');
+  setLoading('screenerRunBtn', true, '▶ 執行篩選');
+
   const c = getCriteria();
   const extra = document.getElementById('extraCriteria').value.trim();
-  const twPart = currentMarket !== 'us' ? `\n【台股條件】${c.tw}。篩出3檔。` : '';
-  const usPart = currentMarket !== 'tw' ? `\n【美股條件】${c.us}。篩出3檔。` : '';
   const twCount = currentMarket === 'us' ? 0 : 3;
   const usCount = currentMarket === 'tw' ? 0 : 3;
+  const twPart = twCount > 0 ? `\n【台股條件】${c.tw}。篩出${twCount}檔。` : '';
+  const usPart = usCount > 0 ? `\n【美股條件】${c.us}。篩出${usCount}檔。` : '';
   const extraPart = extra ? `\n【額外條件】${extra}` : '';
 
-  const prompt = `你是專業的價值投資分析師。請根據以下條件，找出目前最值得長期持有（3–5年）的低估冷門個股：${twPart}${usPart}${extraPart}
+  const twArr = twCount > 0
+    ? `[{"ticker":"2383 台光電","industry":"PCB材料","type":"value","typeLabel":"深度價值","metrics":[{"label":"P/B","value":"1.2x"},{"label":"ROE","value":"18%"},{"label":"市值","value":"120億"}],"desc":"全球極低損耗基板領導廠商，AI伺服器需求帶動放量。護城河清晰分析師覆蓋率低。","risk":"AI伺服器資本支出若縮減出貨將延遲。","scores":{"value":80,"growth":70,"safety":75}}]`
+    : '[]';
+  const usArr = usCount > 0
+    ? `[{"ticker":"EVER","industry":"保險科技","type":"value","typeLabel":"深度低估","metrics":[{"label":"P/E","value":"12x"},{"label":"P/B","value":"1.5x"},{"label":"市值","value":"$590M"}],"desc":"美國最大線上保險比較平台DCF估值低估55%。散戶覆蓋率極低。","risk":"保險業者廣告預算若縮減營收成長將放緩。","scores":{"value":78,"growth":62,"safety":70}}]`
+    : '[]';
+
+  const prompt = `你是專業的價值投資分析師。根據以下條件找出目前最值得長期持有（3到5年）的低估冷門個股：${twPart}${usPart}${extraPart}
 
 選股原則：優先選分析師覆蓋率低、散戶尚未發現的冷門股；護城河清晰；避開純題材炒作。
 
-請只輸出純JSON，不要任何說明文字或markdown符號：
-{"summary":"一句話總結","tw":[${twCount > 0 ? '...'+twCount+'個' : ''}],"us":[${usCount > 0 ? '...'+usCount+'個' : ''}]}
+【極重要】只輸出純JSON一行，不要說明文字、不要markdown、不要換行。完全依照下方範例結構輸出，只替換裡面的數值，tw陣列輸出${twCount}個物件，us陣列輸出${usCount}個物件：
+{"summary":"摘要","tw":${twArr},"us":${usArr}}`;
 
-每個股票物件格式：
-{"ticker":"代號 名稱","industry":"產業","type":"value或growth或recovery","typeLabel":"深度價值或成長價值或困境反轉","metrics":[{"label":"P/B","value":"0.9×"},{"label":"ROE","value":"15%"},{"label":"市值","value":"80億"}],"desc":"2句說明為何值得關注","risk":"1句主要風險","scores":{"value":75,"growth":60,"safety":80}}
-
-tw需${twCount}個元素，us需${usCount}個元素，所有字串不含換行符號。`;
-
-  const box = document.getElementById('promptBox');
-  const copyBtn = document.getElementById('copyBtn');
-  const hint = document.getElementById('stepHint');
-  box.textContent = prompt;
-  box.classList.add('active');
-  copyBtn.classList.add('active');
-  copyBtn.textContent = '📋 複製 Prompt → 貼到 Claude.ai';
-  copyBtn.classList.remove('copied');
-  hint.classList.add('active');
-}
-
-function copyPrompt() {
-  const text = document.getElementById('promptBox').textContent;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.getElementById('copyBtn');
-    btn.textContent = '✓ 已複製！';
-    btn.classList.add('copied');
-    setTimeout(() => {
-      btn.textContent = '📋 複製 Prompt → 貼到 Claude.ai';
-      btn.classList.remove('copied');
-    }, 2500);
-  });
-}
-
-function parseResults() {
-  const raw = document.getElementById('pasteArea').value.trim();
-  const errBox = document.getElementById('errorBox');
-  errBox.classList.remove('active');
-
-  if (!raw) {
-    errBox.textContent = '請先貼上 Claude.ai 的回覆內容';
-    errBox.classList.add('active');
-    return;
-  }
-
-  let parsed;
   try {
-    const clean = raw.replace(/```json|```/g, '').trim();
-    const match = clean.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('找不到 JSON 格式');
-    parsed = JSON.parse(match[0]);
+    const raw = await callGemini(prompt);
+    const parsed = parseJSON(raw);
+    if (!parsed.tw) parsed.tw = [];
+    if (!parsed.us) parsed.us = [];
+    const sum = document.getElementById('screenerSummary');
+    if (parsed.summary) { sum.textContent = '📊 ' + parsed.summary; sum.classList.add('active'); }
+    else sum.classList.remove('active');
+    renderStockCards(parsed.tw, parsed.us);
   } catch(e) {
-    errBox.textContent = `解析失敗：${e.message}。請確認貼上的是完整的 JSON 回覆，或嘗試請 Claude 重新輸出 JSON。`;
+    errBox.textContent = `錯誤：${e.message}`;
     errBox.classList.add('active');
-    return;
   }
-
-  const summary = document.getElementById('summaryBox');
-  if (parsed.summary) {
-    summary.textContent = '📊 ' + parsed.summary;
-    summary.classList.add('active');
-  } else {
-    summary.classList.remove('active');
-  }
-
-  renderCards(parsed.tw || [], parsed.us || []);
+  setLoading('screenerRunBtn', false, '▶ 執行篩選');
 }
 
-function renderCards(tw, us) {
-  const area = document.getElementById('resultsArea');
+function renderStockCards(tw, us) {
+  const area = document.getElementById('screenerResults');
   let html = '';
-
-  if (tw.length > 0) {
-    html += `<div class="result-section-title">🇹🇼 台股候選（${tw.length}檔）</div>`;
-    html += tw.map(stockCard).join('');
-  }
-  if (us.length > 0) {
-    html += `<div class="result-section-title" style="margin-top:20px">🇺🇸 美股候選（${us.length}檔）</div>`;
-    html += us.map(stockCard).join('');
-  }
-  if (!html) {
-    html = '<div class="empty-results"><div class="big">◈</div>沒有找到結果，請檢查貼上的內容</div>';
-  }
+  if (tw.length > 0) { html += `<div class="result-section-title">🇹🇼 台股候選（${tw.length}檔）</div>`; html += tw.map(stockCard).join(''); }
+  if (us.length > 0) { html += `<div class="result-section-title" style="margin-top:18px">🇺🇸 美股候選（${us.length}檔）</div>`; html += us.map(stockCard).join(''); }
+  if (!html) html = '<div class="empty-results"><div class="empty-icon">◈</div>沒有找到結果</div>';
   area.innerHTML = html;
 }
 
 function stockCard(s) {
-  const badgeClass = s.type === 'value' ? 'badge-value' : s.type === 'growth' ? 'badge-growth' : 'badge-recovery';
-  const metrics = (s.metrics||[]).map(m =>
-    `<span class="metric-tag">${m.label} <span>${m.value}</span></span>`
-  ).join('');
-  const sc = s.scores || {};
-  const bars = [
-    {n:'估值', v:sc.value||50, c:'#2d5a3d'},
-    {n:'成長', v:sc.growth||50, c:'#2a4a8a'},
-    {n:'安全', v:sc.safety||50, c:'#c17d0a'}
-  ].map(b => `
-    <div class="score-item">
-      <div class="score-name">${b.n}</div>
-      <div class="score-bar-track"><div class="score-bar-fill" style="width:${b.v}%;background:${b.c}"></div></div>
-      <div class="score-num">${b.v}</div>
-    </div>`).join('');
+  const bc = s.type === 'value' ? 'badge-value' : s.type === 'growth' ? 'badge-growth' : 'badge-recovery';
+  const metrics = (s.metrics||[]).map(m => `<span class="metric-tag">${m.label} <span>${m.value}</span></span>`).join('');
+  const sc = s.scores||{};
+  const bars = [{n:'估值',v:sc.value||50,c:'#2d5a3d'},{n:'成長',v:sc.growth||50,c:'#2a4a8a'},{n:'安全',v:sc.safety||50,c:'#c17d0a'}]
+    .map(b => `<div class="score-item"><div class="score-name">${b.n}</div><div class="score-track"><div class="score-fill" style="width:${b.v}%;background:${b.c}"></div></div><div class="score-num">${b.v}</div></div>`).join('');
+  return `<div class="stock-card"><div class="card-top"><div><div class="ticker-sym">${s.ticker||''}</div><div class="ticker-ind">${s.industry||''}</div></div><span class="badge ${bc}">${s.typeLabel||s.type||''}</span></div><div class="metrics-row">${metrics}</div><div class="card-desc">${s.desc||''}</div><div class="card-risk">⚠ ${s.risk||''}</div><div class="score-row">${bars}</div></div>`;
+}
 
-  return `
-    <div class="stock-card">
-      <div class="card-top">
-        <div>
-          <div class="ticker-sym">${s.ticker||''}</div>
-          <div class="ticker-ind">${s.industry||''}</div>
-        </div>
-        <span class="badge ${badgeClass}">${s.typeLabel||s.type||''}</span>
-      </div>
-      <div class="metrics-row">${metrics}</div>
-      <div class="card-desc">${s.desc||''}</div>
-      <div class="card-risk">⚠ ${s.risk||''}</div>
-      <div class="score-row">${bars}</div>
-    </div>`;
+// ── EVENT ANALYSIS ──
+async function runEventAnalysis() {
+  const title = document.getElementById('eventTitle').value.trim();
+  if (!title) { alert('請先輸入事件標題'); return; }
+  const errBox = document.getElementById('eventError');
+  errBox.classList.remove('active');
+  setLoading('eventRunBtn', true, '▶ 執行事件分析');
+
+  const types = getActiveTags('eventTypeGroup');
+  const markets = getActiveTags('marketGroup');
+  const focuses = getActiveTags('focusGroup');
+  const detail = document.getElementById('eventDetail').value.trim();
+  const wantWin = focuses.includes('受益產業 + 個股');
+  const wantLose = focuses.includes('受害產業 + 個股');
+  const wantHistory = focuses.includes('歷史類似事件');
+  const wantAction = focuses.includes('操作建議');
+
+  const winnersEx = wantWin ? `,"winners":[{"industry":"半導體","reason":"降息降低資金成本有利擴產","stocks":[{"name":"台積電","reason":"受益資本支出擴張"},{"name":"AMD","reason":"估值重新定價"}]}]` : `,"winners":[]`;
+  const losersEx = wantLose ? `,"losers":[{"industry":"銀行","reason":"降息壓縮利差影響獲利","stocks":[{"name":"摩根大通","reason":"淨利息收入下降"},{"name":"國泰金","reason":"利差收窄"}]}]` : `,"losers":[]`;
+  const historyEx = wantHistory ? `,"history":[{"event":"2019年Fed三次預防性降息","year":"2019","outcome":"標普500全年上漲28%，科技股領漲，債券同步上漲"}]` : `,"history":[]`;
+  const actionsEx = wantAction ? `,"actions":[{"type":"持有","target":"科技股、成長股","reason":"降息環境有利高本益比成長股重新估值。建議持有優質科技股不輕易出場。"},{"type":"觀望","target":"金融股","reason":"利差收窄短期影響獲利能見度。待財報確認影響幅度後再決定是否調整部位。"}]` : `,"actions":[]`;
+
+  const prompt = `你是專業的宏觀投資分析師。請分析以下國際事件對股市的影響：
+
+事件：${title}
+事件類型：${types.join('、')}
+影響市場：${markets.join('、')}${detail ? '\n補充說明：' + detail : ''}
+
+【極重要】只輸出純JSON一行，不要任何說明文字、不要markdown、不要換行符號。完全依照下方範例結構輸出，只替換裡面的數值：
+{"eventTitle":"${title}","summary":"事件背景2到3句摘要","impact":"overall_positive或overall_negative或mixed"${winnersEx}${losersEx}${historyEx}${actionsEx}}
+
+winners和losers各3個產業，每個產業2到3支個股。history提供2個案例。actions提供2到3條建議。`;
+
+  try {
+    const raw = await callGemini(prompt);
+    const parsed = parseJSON(raw);
+    renderEventReport(parsed);
+  } catch(e) {
+    errBox.textContent = `錯誤：${e.message}`;
+    errBox.classList.add('active');
+  }
+  setLoading('eventRunBtn', false, '▶ 執行事件分析');
+}
+
+function renderEventReport(d) {
+  const area = document.getElementById('eventResults');
+  let html = '';
+  if (d.summary) {
+    const impactColor = d.impact === 'overall_positive' ? 'var(--accent)' : d.impact === 'overall_negative' ? 'var(--red)' : 'var(--amber)';
+    const impactLabel = d.impact === 'overall_positive' ? '整體正面' : d.impact === 'overall_negative' ? '整體負面' : '影響混合';
+    html += `<div class="event-impact-card"><div class="event-card-title"><span style="color:${impactColor}">● ${impactLabel}</span>&nbsp;│&nbsp;${d.eventTitle||'事件分析'}</div><div class="card-desc" style="font-size:13px">${d.summary}</div></div>`;
+  }
+  const winners = d.winners || [], losers = d.losers || [];
+  if (winners.length > 0 || losers.length > 0) {
+    html += `<div class="result-section-title">受益 vs 受害產業</div><div class="impact-grid">`;
+    html += `<div class="impact-col win"><div class="impact-col-title">▲ 受益產業</div>`;
+    winners.forEach(w => {
+      html += `<div style="margin-bottom:10px"><div style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--accent);margin-bottom:4px">${w.industry}</div><div style="font-size:11px;color:var(--ink3);margin-bottom:4px">${w.reason||''}</div>`;
+      (w.stocks||[]).forEach(s => { html += `<div class="impact-stock"><span class="impact-stock-name">${s.name}</span><span style="font-size:11px;color:var(--ink3);margin-left:6px">${s.reason||''}</span></div>`; });
+      html += `</div>`;
+    });
+    html += `</div><div class="impact-col lose"><div class="impact-col-title">▼ 受害產業</div>`;
+    losers.forEach(l => {
+      html += `<div style="margin-bottom:10px"><div style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--red);margin-bottom:4px">${l.industry}</div><div style="font-size:11px;color:var(--ink3);margin-bottom:4px">${l.reason||''}</div>`;
+      (l.stocks||[]).forEach(s => { html += `<div class="impact-stock"><span class="impact-stock-name">${s.name}</span><span style="font-size:11px;color:var(--ink3);margin-left:6px">${s.reason||''}</span></div>`; });
+      html += `</div>`;
+    });
+    html += `</div></div>`;
+  }
+  const history = d.history || [];
+  if (history.length > 0) {
+    html += `<div class="result-section-title" style="margin-top:18px">歷史類似事件參考</div>`;
+    history.forEach(h => { html += `<div class="history-box"><div class="history-title">📅 ${h.event}（${h.year}）</div><div class="history-content">${h.outcome}</div></div>`; });
+  }
+  const actions = d.actions || [];
+  if (actions.length > 0) {
+    html += `<div class="result-section-title" style="margin-top:18px">操作建議</div>`;
+    actions.forEach(a => {
+      const cls = a.type === '持有' ? 'action-hold' : a.type === '減碼' ? 'action-reduce' : 'action-wait';
+      const icon = a.type === '持有' ? '✓' : a.type === '減碼' ? '↓' : '⏸';
+      html += `<div class="action-box ${cls}"><div class="action-label">${icon} ${a.type}｜${a.target||''}</div><div class="action-content">${a.reason}</div></div>`;
+    });
+  }
+  if (!html) html = '<div class="empty-results"><div class="empty-icon">🌐</div>沒有找到結果</div>';
+  area.innerHTML = html;
 }
 </script>
 </body>
