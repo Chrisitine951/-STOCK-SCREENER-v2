@@ -287,6 +287,7 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
 <div class="nav-tabs">
   <button class="nav-tab active" onclick="switchPage('screener', this)">📋 選股系統</button>
   <button class="nav-tab" onclick="switchPage('news', this)">📡 新聞雷達</button>
+  <button class="nav-tab" onclick="switchPage('history', this); loadHistory()">📁 歷史紀錄</button>
 </div>
 
 <div class="apikey-bar">
@@ -506,6 +507,34 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
   </div>
 </div>
 
+
+
+<!-- ==================== PAGE 3: HISTORY ==================== -->
+<div class="page" id="page-history">
+  <div style="max-width:1100px;margin:0 auto;padding:28px 32px">
+
+    <!-- Sub tabs -->
+    <div style="display:flex;gap:0;margin-bottom:24px;border:1px solid var(--rule);border-radius:6px;overflow:hidden;width:fit-content">
+      <button class="history-sub-tab active" id="hsub-news" onclick="switchHistorySub('news')" style="padding:8px 20px;font-family:var(--mono);font-size:12px;border:none;background:var(--ink);color:var(--bg);cursor:pointer">📡 新聞分析</button>
+      <button class="history-sub-tab" id="hsub-screener" onclick="switchHistorySub('screener')" style="padding:8px 20px;font-family:var(--mono);font-size:12px;border:none;background:transparent;color:var(--ink3);cursor:pointer;border-left:1px solid var(--rule)">📋 選股記錄</button>
+    </div>
+
+    <!-- Filter row -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--ink3)">篩選：</div>
+      <div class="tag-group" id="historyFilterGroup">
+        <button class="tag-btn active" onclick="toggleTag(this,'historyFilterGroup');filterHistory()">全部</button>
+        <button class="tag-btn" onclick="toggleTag(this,'historyFilterGroup');filterHistory()">本週</button>
+        <button class="tag-btn" onclick="toggleTag(this,'historyFilterGroup');filterHistory()">本月</button>
+      </div>
+      <button onclick="loadHistory()" style="margin-left:auto;font-family:var(--mono);font-size:11px;padding:6px 14px;background:transparent;border:1px solid var(--rule);border-radius:4px;cursor:pointer;color:var(--ink2)">↻ 重新載入</button>
+    </div>
+
+    <div class="error-box" id="historyError"></div>
+    <div id="historyLoading" style="display:none;font-family:var(--mono);font-size:12px;color:var(--ink3);padding:20px 0">載入中...</div>
+    <div id="historyContent"></div>
+  </div>
+</div>
 
 <script>
 document.getElementById('mastDate').textContent = new Date().toLocaleDateString('zh-TW', {year:'numeric',month:'long',day:'numeric'});
@@ -1502,6 +1531,152 @@ function renderEventReport(d) {
   if (!html) html = '<div class="empty-results"><div class="empty-icon">🌐</div>沒有找到結果</div>';
   area.innerHTML = html;
 }
+
+// ══════════════════════════════════════════
+// HISTORY PAGE
+// ══════════════════════════════════════════
+let currentHistorySub = 'news';
+let allHistoryRows = [];
+
+function switchHistorySub(sub) {
+  currentHistorySub = sub;
+  document.getElementById('hsub-news').style.background = sub === 'news' ? 'var(--ink)' : 'transparent';
+  document.getElementById('hsub-news').style.color = sub === 'news' ? 'var(--bg)' : 'var(--ink3)';
+  document.getElementById('hsub-screener').style.background = sub === 'screener' ? 'var(--ink)' : 'transparent';
+  document.getElementById('hsub-screener').style.color = sub === 'screener' ? 'var(--bg)' : 'var(--ink3)';
+  loadHistory();
+}
+
+async function readSheet(sheetName) {
+  const cfg = getSheetsConfig();
+  if (!cfg.clientEmail || !cfg.privateKey) throw new Error('請先設定 Google Sheets 憑證');
+  const token = await getAccessToken(cfg);
+  const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + cfg.spreadsheetId +
+    '/values/' + encodeURIComponent(sheetName) + '?majorDimension=ROWS';
+  const res = await fetch(url, {
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error?.message || 'Read failed');
+  }
+  const data = await res.json();
+  return data.values || [];
+}
+
+async function loadHistory() {
+  const errBox = document.getElementById('historyError');
+  const loading = document.getElementById('historyLoading');
+  const content = document.getElementById('historyContent');
+  errBox.classList.remove('active');
+  loading.style.display = 'block';
+  content.innerHTML = '';
+
+  try {
+    const sheetName = currentHistorySub === 'news' ? '新聞分析' : '選股記錄';
+    const rows = await readSheet(sheetName);
+    allHistoryRows = rows;
+    filterHistory();
+  } catch(e) {
+    errBox.textContent = '載入失敗：' + e.message;
+    errBox.classList.add('active');
+  }
+  loading.style.display = 'none';
+}
+
+function filterHistory() {
+  const filters = getActiveTags('historyFilterGroup');
+  const now = new Date();
+  const rows = allHistoryRows.slice(1); // skip header
+
+  const filtered = rows.filter(row => {
+    if (!row[0]) return false;
+    if (filters.includes('全部')) return true;
+    const rowDate = new Date(row[0]);
+    if (isNaN(rowDate)) return true;
+    const diffDays = (now - rowDate) / (1000 * 60 * 60 * 24);
+    if (filters.includes('本週') && diffDays <= 7) return true;
+    if (filters.includes('本月') && diffDays <= 30) return true;
+    return false;
+  });
+
+  renderHistoryRows(filtered);
+}
+
+function renderHistoryRows(rows) {
+  const container = document.getElementById('historyContent');
+  if (!rows.length) {
+    container.innerHTML = '<div class="empty-results"><div class="empty-icon">📁</div>尚無歷史紀錄</div>';
+    return;
+  }
+
+  let html = '';
+  rows.slice().reverse().forEach((row, idx) => {
+    const isNews = currentHistorySub === 'news';
+    const date = row[0] || '';
+    const time = row[1] || '';
+    const col3 = row[2] || '';  // newsCount or market
+    const col4 = row[3] || '';  // sentiment or tw stocks
+    const col5 = row[4] || '';  // outlook or us stocks
+    const col6 = row[5] || '';  // winners or criteria
+    const col7 = row[6] || '';  // losers
+    const jsonRaw = isNews ? (row[7] || '') : (row[6] || '');
+    const cardId = 'hcard-' + idx;
+
+    if (isNews) {
+      const sentimentColor = col4 === 'bullish' ? 'var(--accent)' : col4 === 'bearish' ? 'var(--red)' : 'var(--amber)';
+      const sentimentLabel = col4 === 'bullish' ? '偏多▲' : col4 === 'bearish' ? '偏空▼' : '中性─';
+      html += '<div class="stock-card" style="margin-bottom:10px">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleHistoryCard(this.dataset.id)" data-id=\'" + cardId + "\'>';
+      html += '<div style="display:flex;align-items:center;gap:12px">';
+      html += '<div style="font-family:var(--mono);font-size:12px;color:var(--ink)">' + date + ' ' + time + '</div>';
+      html += '<span style="font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:3px;background:' + sentimentColor + '20;color:' + sentimentColor + '">' + sentimentLabel + '</span>';
+      html += '<span style="font-family:var(--mono);font-size:10px;color:var(--ink3)">' + col3 + ' 則新聞</span>';
+      html += '</div>';
+      html += '<span style="font-family:var(--mono);font-size:12px;color:var(--ink3)" id="' + cardId + '-arrow">▼</span>';
+      html += '</div>';
+      html += '<div style="font-size:12px;color:var(--ink2);margin-top:6px">' + col5 + '</div>';
+      html += '<div id="' + cardId + '" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--rule2)">';
+      if (col6 || col7) {
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">';
+        html += '<div style="background:var(--accent-light);border-radius:4px;padding:8px 10px"><div style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:4px">▲ 受益</div><div style="font-size:12px;color:var(--ink2)">' + col6 + '</div></div>';
+        html += '<div style="background:var(--red-light);border-radius:4px;padding:8px 10px"><div style="font-family:var(--mono);font-size:10px;color:var(--red);margin-bottom:4px">▼ 受害</div><div style="font-size:12px;color:var(--ink2)">' + col7 + '</div></div>';
+        html += '</div>';
+      }
+      html += '</div></div>';
+    } else {
+      // Screener row: date, time, market, tw, us, criteria, json
+      html += '<div class="stock-card" style="margin-bottom:10px">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleHistoryCard(this.dataset.id)" data-id=\'" + cardId + "\'>';
+      html += '<div style="display:flex;align-items:center;gap:12px">';
+      html += '<div style="font-family:var(--mono);font-size:12px;color:var(--ink)">' + date + ' ' + time + '</div>';
+      html += '<span style="font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:3px;background:var(--accent-light);color:var(--accent)">' + col3 + '</span>';
+      html += '</div>';
+      html += '<span style="font-family:var(--mono);font-size:12px;color:var(--ink3)" id="' + cardId + '-arrow">▼</span>';
+      html += '</div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">';
+      html += '<div><div style="font-family:var(--mono);font-size:10px;color:var(--ink3);margin-bottom:3px">🇹🇼 台股</div><div style="font-size:12px;color:var(--ink2)">' + col4 + '</div></div>';
+      html += '<div><div style="font-family:var(--mono);font-size:10px;color:var(--ink3);margin-bottom:3px">🇺🇸 美股</div><div style="font-size:12px;color:var(--ink2)">' + col5 + '</div></div>';
+      html += '</div>';
+      html += '<div id="' + cardId + '" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--rule2)">';
+      html += '<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);margin-bottom:4px">篩選條件</div>';
+      html += '<div style="font-size:12px;color:var(--ink2)">' + col6 + '</div>';
+      html += '</div></div>';
+    }
+  });
+
+  container.innerHTML = html;
+}
+
+function toggleHistoryCard(id) {
+  const card = document.getElementById(id);
+  const arrow = document.getElementById(id + '-arrow');
+  if (!card) return;
+  const isOpen = card.style.display !== 'none';
+  card.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.textContent = isOpen ? '▼' : '▲';
+}
+
 </script>
 </body>
 </html>
