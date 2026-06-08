@@ -1722,16 +1722,13 @@ async function ptFetchUSPrice(ticker, avKey) {
   };
 }
 
-async function ptFetchTWPrice(ticker) {
+async function ptFetchTWPrice(ticker, exchange) {
   // 透過 corsproxy.io 繞過 CORS，使用 Yahoo Finance query2 endpoint
   const tryFetch = async (symbol) => {
     const yahooUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`;
     const url = `https://corsproxy.io/?url=${encodeURIComponent(yahooUrl)}`;
     const res = await fetch(url, {
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0'
-      }
+      headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' }
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
@@ -1744,13 +1741,17 @@ async function ptFetchTWPrice(ticker) {
     return { price, change, changePct, updatedAt: new Date().toLocaleDateString('zh-TW') };
   };
 
+  // 若 portfolio.js 已標記 exchange，直接用指定交易所；否則先試 TW 再試 TWO
+  if (exchange === 'TWO') {
+    return await tryFetch(`${ticker}.TWO`);
+  }
   try {
     return await tryFetch(`${ticker}.TW`);
   } catch(e) {
     try {
       return await tryFetch(`${ticker}.TWO`);
     } catch(e2) {
-      throw new Error(`${ticker}: 無法取得報價`);
+      throw new Error(`${ticker}: 無法取得報價 (${e2.message})`);
     }
   }
 }
@@ -1773,9 +1774,10 @@ async function ptFetchAllPrices() {
 
   const errors = [];
 
-  // 台股（Yahoo Finance，延遲較短）
+  // 台股（Yahoo Finance via corsproxy.io，延遲較短）
   for (const ticker of twTickers) {
-    try { PT.prices[ticker] = await ptFetchTWPrice(ticker); }
+    const stock = groups.flatMap(g => g.stocks).find(s => s.ticker === ticker);
+    try { PT.prices[ticker] = await ptFetchTWPrice(ticker, stock?.exchange); }
     catch(e) { errors.push(e.message); PT.prices[ticker] = null; }
     await ptSleep(200);
   }
