@@ -1723,11 +1723,16 @@ async function ptFetchUSPrice(ticker, avKey) {
 }
 
 async function ptFetchTWPrice(ticker) {
-  // 透過 corsproxy.io 繞過 CORS 限制，抓取 Yahoo Finance 台股資料
-  const proxy = 'https://corsproxy.io/?url=';
+  // 透過 corsproxy.io 繞過 CORS，使用 Yahoo Finance query2 endpoint
   const tryFetch = async (symbol) => {
-    const url = proxy + encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`);
-    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    const yahooUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`;
+    const url = `https://corsproxy.io/?url=${encodeURIComponent(yahooUrl)}`;
+    const res = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0'
+      }
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     const meta = data?.chart?.result?.[0]?.meta;
