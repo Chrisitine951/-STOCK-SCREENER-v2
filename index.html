@@ -1723,26 +1723,32 @@ async function ptFetchUSPrice(ticker, avKey) {
 }
 
 async function ptFetchTWPrice(ticker) {
-  const url = `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=tse_${ticker}.tw&json=1&delay=0`;
-  const res = await fetch(url);
-  const data = await res.json();
-  const item = data?.msgArray?.[0];
-  if (!item || !item.z || item.z === '-') {
-    // 嘗試 OTC（上櫃）
-    const url2 = `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=otc_${ticker}.tw&json=1&delay=0`;
-    const res2 = await fetch(url2);
-    const data2 = await res2.json();
-    const item2 = data2?.msgArray?.[0];
-    if (!item2 || !item2.z || item2.z === '-') throw new Error(`${ticker}: 無即時資料`);
-    const price2 = parseFloat(item2.z);
-    const yesterday2 = parseFloat(item2.y);
-    const change2 = price2 - yesterday2;
-    return { price: price2, change: change2, changePct: yesterday2 ? (change2/yesterday2)*100 : 0, updatedAt: item2.d||'' };
+  // Yahoo Finance API — 支援台股（上市加 .TW，上櫃加 .TWO）
+  // 先試上市，失敗再試上櫃
+  const tryFetch = async (symbol) => {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`;
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const meta = data?.chart?.result?.[0]?.meta;
+    if (!meta?.regularMarketPrice) throw new Error('無資料');
+    const price = meta.regularMarketPrice;
+    const prevClose = meta.chartPreviousClose || meta.previousClose || price;
+    const change = price - prevClose;
+    const changePct = prevClose ? (change / prevClose) * 100 : 0;
+    return { price, change, changePct, updatedAt: new Date().toLocaleDateString('zh-TW') };
+  };
+
+  try {
+    return await tryFetch(`${ticker}.TW`);
+  } catch(e) {
+    // 上市失敗，嘗試上櫃
+    try {
+      return await tryFetch(`${ticker}.TWO`);
+    } catch(e2) {
+      throw new Error(`${ticker}: 無法取得報價`);
+    }
   }
-  const price = parseFloat(item.z);
-  const yesterday = parseFloat(item.y);
-  const change = price - yesterday;
-  return { price, change, changePct: yesterday ? (change/yesterday)*100 : 0, updatedAt: item.d||'' };
 }
 
 async function ptFetchAllPrices() {
@@ -1763,11 +1769,11 @@ async function ptFetchAllPrices() {
 
   const errors = [];
 
-  // 台股
+  // 台股（Yahoo Finance，延遲較短）
   for (const ticker of twTickers) {
     try { PT.prices[ticker] = await ptFetchTWPrice(ticker); }
     catch(e) { errors.push(e.message); PT.prices[ticker] = null; }
-    await ptSleep(400);
+    await ptSleep(200);
   }
 
   // 美股（每分鐘5次限制，每5支暫停12秒）
@@ -1909,8 +1915,9 @@ async function ptTriggerGroupScan(group) {
     const raw = await callGemini(prompt, 0, 0, true);
     const parsed = parseJSON(raw);
     const news = parsed.news || [];
-    window.scannedNews = news;
-    window.selectedNewsIds = new Set(news.map(n => n.id));
+    // 直接寫入主程式的變數（同一個 scope）
+    scannedNews = news;
+    selectedNewsIds = new Set(news.map(n => n.id));
     if (typeof renderNewsList === 'function') renderNewsList(news);
     if (statusEl) statusEl.textContent = `找到 ${news.length} 則新聞，分析中...`;
     if (news.length > 0 && typeof analyzeSelected === 'function') await analyzeSelected();
