@@ -1,16 +1,20 @@
 name: Deploy with Config
+
 on:
   push:
     branches: [ main ]
   schedule:
-    - cron: '0 0 * * 1-5'  # 每天 UTC 00:00 = 台灣時間 08:00，週一到週五
+    - cron: '0 0 * * 1-5'
+
 permissions:
   contents: write
   pages: write
   id-token: write
+
 concurrency:
   group: gh-pages-deploy
   cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -18,14 +22,12 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
-      - name: Inject credentials
-        run: |
-          sed -i "s|INJECT_GEMINI_KEY|${{ secrets.GEMINI_API_KEY }}|g" index.html
       - name: Deploy to Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./
+
   auto_news:
     runs-on: ubuntu-latest
     env:
