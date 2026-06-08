@@ -18,15 +18,9 @@ TW_TZ = timezone(timedelta(hours=8))
 NOW = datetime.now(TW_TZ)
 TODAY = NOW.strftime('%Y/%m/%d')
 
-# 模型 fallback 順序（都是現役模型）
-MODELS = [
-    'gemini-2.5-flash-lite',
-    'gemini-2.5-flash',
-    'gemini-2.5-pro',
-]
-
 def call_gemini(prompt, use_search=True):
-    """Call Gemini API with fallback models and retry on rate limit."""
+    """Call Gemini API with optional Google Search grounding."""
+    url = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={GEMINI_API_KEY}'
     body = {
         'contents': [{'parts': [{'text': prompt}]}],
         'generationConfig': {'temperature': 0.3, 'maxOutputTokens': 8192}
@@ -34,47 +28,25 @@ def call_gemini(prompt, use_search=True):
     if use_search:
         body['tools'] = [{'google_search': {}}]
 
-    for model in MODELS:
-        url = f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}'
-        print(f'Trying model: {model}...')
-
-        for attempt in range(3):
-            resp = requests.post(url, json=body, timeout=90)
-
-            if resp.status_code == 200:
-                data = resp.json()
-                text = (data.get('candidates', [{}])[0]
-                        .get('content', {})
-                        .get('parts', [{}])[0]
-                        .get('text', ''))
-                if text:
-                    print(f'✓ Success with {model}')
-                    return text
-                raise Exception(f'{model}: empty response')
-
-            elif resp.status_code in (429, 503):
-                wait = (attempt + 1) * 10  # 10s, 20s, 30s
-                print(f'Rate limited on {model} (attempt {attempt+1}), waiting {wait}s...')
-                time.sleep(wait)
-
-            elif resp.status_code == 404:
-                print(f'Model {model} not found, trying next...')
-                break  # 直接試下一個模型
-
-            else:
-                raise Exception(f'Gemini error {resp.status_code}: {resp.text[:200]}')
-
-        # 模型切換前等一下
-        if model != MODELS[-1]:
-            print(f'Switching to next model...')
-            time.sleep(5)
-
-    raise Exception('All models failed after retries')
+    for attempt in range(4):
+        resp = requests.post(url, json=body, timeout=120)
+        if resp.status_code == 200:
+            data = resp.json()
+            text = data.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
+            return text
+        elif resp.status_code in (429, 503):
+            wait = (attempt + 1) * 30
+            print(f'Rate limited (attempt {attempt+1}), waiting {wait}s...')
+            time.sleep(wait)
+        else:
+            raise Exception(f'Gemini error {resp.status_code}: {resp.text[:200]}')
+    raise Exception('Gemini failed after 4 attempts')
 
 def parse_json(raw):
     """Extract JSON from response text."""
     import re
     raw = raw.replace('```json', '').replace('```', '').strip()
+    # Try array first
     arr_match = re.search(r'\[[\s\S]*\]', raw)
     obj_match = re.search(r'\{[\s\S]*\}', raw)
     if obj_match:
