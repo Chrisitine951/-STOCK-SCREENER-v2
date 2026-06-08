@@ -271,6 +271,61 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
   .skel-medium { width: 70%; }
   .skel-long { width: 95%; }
 
+  /* ── PORTFOLIO PAGE ── */
+  .pt-page { max-width: 1300px; margin: 0 auto; padding: 28px 32px; }
+
+  .pt-topbar { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 2px solid var(--ink); }
+  .pt-topbar-title { font-family: var(--mono); font-size: 13px; letter-spacing: 0.12em; color: var(--ink); }
+  .pt-refresh-btn { font-family: var(--mono); font-size: 12px; padding: 8px 18px; background: var(--ink); color: var(--bg); border: none; border-radius: 4px; cursor: pointer; transition: opacity 0.15s; }
+  .pt-refresh-btn:hover { opacity: 0.82; }
+  .pt-refresh-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .pt-status-msg { font-family: var(--mono); font-size: 11px; padding: 5px 12px; border-radius: 4px; }
+  .pt-msg-ok { background: var(--accent-light); color: var(--accent); }
+  .pt-msg-loading { background: var(--amber-light); color: var(--amber); }
+  .pt-msg-warn { background: var(--amber-light); color: var(--amber); }
+  .pt-msg-error { background: var(--red-light); color: var(--red); }
+  .pt-updated { font-family: var(--mono); font-size: 10px; color: var(--ink3); margin-left: auto; }
+
+  /* GROUP GRID */
+  .pt-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(520px, 1fr)); gap: 20px; }
+
+  .pt-group { background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+  .pt-group-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: var(--ink); color: var(--bg); }
+  .pt-group-title { display: flex; align-items: center; gap: 8px; }
+  .pt-group-icon { font-size: 16px; }
+  .pt-group-label { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--bg); }
+  .pt-group-market { font-family: var(--mono); font-size: 10px; color: #666; padding: 2px 7px; border-radius: 3px; background: rgba(255,255,255,0.08); }
+  .pt-group-meta { display: flex; align-items: center; gap: 10px; }
+  .pt-group-pnl { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+  .pt-scan-btn { font-family: var(--mono); font-size: 11px; padding: 5px 12px; background: transparent; border: 1px solid rgba(255,255,255,0.25); color: #c8c4b8; border-radius: 4px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .pt-scan-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.5); }
+
+  /* STOCK CARDS */
+  .pt-stocks { padding: 8px 0; }
+  .pt-stock-card { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--rule2); transition: background 0.12s; }
+  .pt-stock-card:last-child { border-bottom: none; }
+  .pt-stock-card:hover { background: rgba(26,26,24,0.02); }
+
+  .pt-ticker { font-family: var(--mono); font-size: 14px; font-weight: 500; color: var(--ink); }
+  .pt-name { font-size: 11px; color: var(--ink3); margin-top: 1px; }
+  .pt-shares { font-family: var(--mono); font-size: 10px; color: var(--ink3); margin-top: 4px; }
+
+  .pt-card-center { text-align: right; }
+  .pt-current-price { font-family: var(--mono); font-size: 15px; font-weight: 500; color: var(--ink); }
+  .pt-day-change { font-family: var(--mono); font-size: 10px; margin-top: 3px; }
+
+  .pt-card-right { text-align: right; min-width: 90px; }
+  .pt-pnl-pct { font-family: var(--mono); font-size: 14px; font-weight: 500; }
+  .pt-pnl-amt { font-family: var(--mono); font-size: 11px; margin-top: 2px; }
+
+  /* STATUS BADGES */
+  .pt-status-badge { display: inline-block; font-family: var(--mono); font-size: 9px; padding: 2px 6px; border-radius: 3px; margin-top: 4px; letter-spacing: 0.04em; }
+  .status-great { background: var(--accent-light); color: var(--accent); }
+  .status-good { background: #e8f4ee; color: #1a6b3a; }
+  .status-flat { background: var(--amber-light); color: var(--amber); }
+  .status-loss { background: #fdf4f0; color: #c06030; }
+  .status-bad { background: var(--red-light); color: var(--red); }
+
   /* NUCLEAR BANNER */
   .nuclear-banner {
     background: linear-gradient(135deg, #0a1a0a, #0d2010);
@@ -292,6 +347,7 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
   .nuclear-stat-pnl { font-family: var(--mono); font-size: 11px; color: #f87171; }
 
 </style>
+  <script src="portfolio.js"></script>
 </head>
 <body>
 
@@ -307,6 +363,7 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
   <button class="nav-tab active" onclick="switchPage('screener', this)">📋 選股系統</button>
   <button class="nav-tab" onclick="switchPage('news', this)">📡 新聞雷達</button>
   <button class="nav-tab" onclick="switchPage('history', this); loadHistory()">📁 歷史紀錄</button>
+  <button class="nav-tab" onclick="switchPage('portfolio', this); ptInit()">💼 持倉管理</button>
 </div>
 
 <div class="apikey-bar">
@@ -315,6 +372,12 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
     placeholder="貼上你的 Gemini API Key"
     oninput="onApiKeyChange(this.value)" />
   <span class="apikey-status" id="apiKeyStatus">未設定</span>
+  <span style="width:1px;height:16px;background:rgba(255,255,255,0.1);margin:0 8px;flex-shrink:0"></span>
+  <span class="apikey-label">ALPHA VANTAGE KEY</span>
+  <input class="apikey-input" id="avKeyInput" type="password"
+    placeholder="貼上你的 Alpha Vantage Key"
+    oninput="ptOnAvKeyChange(this.value)" />
+  <span class="apikey-status" id="avKeyStatus">未設定</span>
   <span class="apikey-hint">取得免費 Key → <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a></span>
 </div>
 
@@ -579,7 +642,28 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
   </div>
 </div>
 
-<script>
+<!-- ==================== PAGE 4: PORTFOLIO ==================== -->
+<div class="page" id="page-portfolio">
+  <div class="pt-page">
+
+    <!-- Top bar -->
+    <div class="pt-topbar">
+      <div class="pt-topbar-title">💼 持倉管理</div>
+      <button class="pt-refresh-btn" id="ptRefreshBtn" onclick="ptFetchAllPrices()">↻ 更新所有股價</button>
+      <div class="pt-status-msg" id="ptStatusMsg" style="display:none"></div>
+      <div class="pt-updated" id="ptUpdatedAt"></div>
+    </div>
+
+    <!-- Groups grid -->
+    <div class="pt-groups" id="ptGroupsContainer">
+      <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--ink3);font-family:var(--mono);font-size:12px;border:1px dashed var(--rule);border-radius:8px">
+        <div style="font-size:28px;margin-bottom:10px;opacity:0.3">💼</div>
+        點「更新所有股價」載入即時報價，或確認 portfolio.js 已正確載入
+      </div>
+    </div>
+
+  </div>
+</div>
 document.getElementById('mastDate').textContent = new Date().toLocaleDateString('zh-TW', {year:'numeric',month:'long',day:'numeric'});
 
 // ── API KEY ──
@@ -1140,6 +1224,15 @@ window.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => onApiKeyChange(savedKey), 50);
     }
   }
+  // 還原 Alpha Vantage key
+  const savedAv = localStorage.getItem('av_api_key');
+  if (savedAv) {
+    const avInp = document.getElementById('avKeyInput');
+    if (avInp) {
+      avInp.value = savedAv;
+      setTimeout(() => ptOnAvKeyChange(savedAv), 50);
+    }
+  }
   loadPrefs();
 });
 
@@ -1594,6 +1687,277 @@ function toggleHistoryCard(id) {
   if (arrow) arrow.textContent = isOpen ? '▼' : '▲';
 }
 
+</script>
+
+<!-- ==================== PORTFOLIO TAB JS ==================== -->
+<script>
+// ─────────────────────────────────────────
+// 持倉管理 tab 邏輯
+// 依賴：window.PORTFOLIO (from portfolio.js)
+// ─────────────────────────────────────────
+const PT = {
+  prices: {},
+  loading: false,
+};
+
+function ptGetAvKey() {
+  return (document.getElementById('avKeyInput')?.value || '').trim()
+    || localStorage.getItem('av_api_key') || '';
+}
+
+function ptOnAvKeyChange(val) {
+  const trimmed = val.trim();
+  const status = document.getElementById('avKeyStatus');
+  if (trimmed.length > 10) {
+    localStorage.setItem('av_api_key', trimmed);
+    if (status) { status.textContent = '✓ 已設定'; status.className = 'apikey-status ok'; }
+  } else {
+    if (status) { status.textContent = trimmed.length ? '格式有誤' : '未設定'; status.className = 'apikey-status'; }
+  }
+}
+
+// ── 股價 API ──
+async function ptFetchUSPrice(ticker, avKey) {
+  const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${ticker}&apikey=${avKey}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  const q = data['Global Quote'];
+  if (!q || !q['05. price']) throw new Error(`${ticker}: 無資料（可能超出 API 限制）`);
+  return {
+    price: parseFloat(q['05. price']),
+    change: parseFloat(q['09. change']),
+    changePct: parseFloat((q['10. change percent'] || '0').replace('%','')),
+    updatedAt: q['07. latest trading day'] || '',
+  };
+}
+
+async function ptFetchTWPrice(ticker) {
+  const url = `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=tse_${ticker}.tw&json=1&delay=0`;
+  const res = await fetch(url);
+  const data = await res.json();
+  const item = data?.msgArray?.[0];
+  if (!item || !item.z || item.z === '-') {
+    // 嘗試 OTC（上櫃）
+    const url2 = `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=otc_${ticker}.tw&json=1&delay=0`;
+    const res2 = await fetch(url2);
+    const data2 = await res2.json();
+    const item2 = data2?.msgArray?.[0];
+    if (!item2 || !item2.z || item2.z === '-') throw new Error(`${ticker}: 無即時資料`);
+    const price2 = parseFloat(item2.z);
+    const yesterday2 = parseFloat(item2.y);
+    const change2 = price2 - yesterday2;
+    return { price: price2, change: change2, changePct: yesterday2 ? (change2/yesterday2)*100 : 0, updatedAt: item2.d||'' };
+  }
+  const price = parseFloat(item.z);
+  const yesterday = parseFloat(item.y);
+  const change = price - yesterday;
+  return { price, change, changePct: yesterday ? (change/yesterday)*100 : 0, updatedAt: item.d||'' };
+}
+
+async function ptFetchAllPrices() {
+  if (PT.loading) return;
+  const avKey = ptGetAvKey();
+  if (!avKey) { ptShowMsg('請先設定 Alpha Vantage API Key', 'error'); return; }
+
+  PT.loading = true;
+  ptSetRefreshBtn(true);
+  ptShowMsg('更新中，台股先跑...', 'loading');
+
+  const groups = window.PORTFOLIO?.groups || [];
+  const usTickers = [], twTickers = [];
+  groups.forEach(g => g.stocks.forEach(s => {
+    if (s.currency === 'USD') usTickers.push(s.ticker);
+    else twTickers.push(s.ticker);
+  }));
+
+  const errors = [];
+
+  // 台股
+  for (const ticker of twTickers) {
+    try { PT.prices[ticker] = await ptFetchTWPrice(ticker); }
+    catch(e) { errors.push(e.message); PT.prices[ticker] = null; }
+    await ptSleep(400);
+  }
+
+  // 美股（每分鐘5次限制，每5支暫停12秒）
+  ptShowMsg(`台股完成，開始抓美股（共 ${usTickers.length} 支）...`, 'loading');
+  for (let i = 0; i < usTickers.length; i++) {
+    try { PT.prices[usTickers[i]] = await ptFetchUSPrice(usTickers[i], avKey); }
+    catch(e) { errors.push(e.message); PT.prices[usTickers[i]] = null; }
+    if ((i+1) % 5 === 0 && i+1 < usTickers.length) {
+      ptShowMsg(`美股 ${i+1}/${usTickers.length} 完成，等待 12 秒...`, 'loading');
+      await ptSleep(12000);
+    } else { await ptSleep(600); }
+  }
+
+  PT.loading = false;
+  ptSetRefreshBtn(false);
+  const now = new Date().toLocaleTimeString('zh-TW');
+  const updEl = document.getElementById('ptUpdatedAt');
+  if (updEl) updEl.textContent = `最後更新：${now}`;
+  ptShowMsg(errors.length ? `完成（${now}）· 部分失敗：${errors.slice(0,2).join('、')}` : `股價已更新 · ${now}`, errors.length ? 'warn' : 'ok');
+  ptRenderAll();
+}
+
+// ── 渲染 ──
+function ptRenderAll() {
+  const groups = window.PORTFOLIO?.groups || [];
+  if (!groups.length) {
+    document.getElementById('ptGroupsContainer').innerHTML =
+      '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--ink3);font-family:var(--mono);font-size:12px">找不到 portfolio.js 資料，請確認已載入</div>';
+    return;
+  }
+  document.getElementById('ptGroupsContainer').innerHTML = groups.map(g => ptRenderGroup(g)).join('');
+}
+
+function ptRenderGroup(group) {
+  const stocks = group.stocks;
+  const USDTWD = 32;
+  let totalCost = 0, totalValue = 0, hasPrices = false;
+
+  stocks.forEach(s => {
+    const pd = PT.prices[s.ticker];
+    const cost = s.avgCost * s.shares * (s.currency==='USD' ? USDTWD : 1);
+    totalCost += cost;
+    if (pd?.price) { totalValue += pd.price * s.shares * (s.currency==='USD' ? USDTWD : 1); hasPrices = true; }
+  });
+
+  const gPnlPct = hasPrices && totalCost > 0 ? ((totalValue-totalCost)/totalCost*100) : null;
+  const gColor = gPnlPct === null ? 'var(--ink3)' : gPnlPct >= 0 ? 'var(--accent)' : 'var(--red)';
+
+  return `<div class="pt-group" id="ptg-${group.id}">
+    <div class="pt-group-header">
+      <div class="pt-group-title">
+        <span class="pt-group-icon">${group.icon}</span>
+        <span class="pt-group-label">${group.label}</span>
+        <span class="pt-group-market">${group.market}</span>
+      </div>
+      <div class="pt-group-meta">
+        ${gPnlPct !== null ? `<span class="pt-group-pnl" style="color:${gColor}">${gPnlPct>=0?'+':''}${gPnlPct.toFixed(2)}%</span>` : ''}
+        <button class="pt-scan-btn" onclick="ptScanNews('${group.id}')">📡 掃描新聞</button>
+      </div>
+    </div>
+    <div class="pt-stocks">${stocks.map(s => ptRenderStockCard(s)).join('')}</div>
+  </div>`;
+}
+
+function ptRenderStockCard(s) {
+  const pd = PT.prices[s.ticker];
+  const cur = s.currency === 'USD' ? '$' : 'NT$';
+  const dp = s.currency === 'USD' ? 2 : 1;
+
+  const price = pd?.price ?? null;
+  const pnlPct = price !== null ? (price - s.avgCost) / s.avgCost * 100 : null;
+  const pnlAmt = price !== null ? (price - s.avgCost) * s.shares : null;
+  const dayPct = pd?.changePct ?? null;
+
+  const pnlColor = pnlPct === null ? 'var(--ink3)' : pnlPct >= 0 ? 'var(--accent)' : 'var(--red)';
+  const dayColor = dayPct === null ? 'var(--ink3)' : dayPct >= 0 ? 'var(--accent)' : 'var(--red)';
+
+  const fmt = (n, d) => n !== null ? n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}) : '—';
+  const fmtPct = n => n !== null ? `${n>=0?'+':''}${n.toFixed(2)}%` : '—';
+  const fmtAmt = n => n !== null ? `${n>=0?'+':'-'}${cur}${Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}` : '—';
+
+  let badge = '', badgeCls = '';
+  if (pnlPct !== null) {
+    if (pnlPct>=50){badge='大賺';badgeCls='status-great';}
+    else if(pnlPct>=10){badge='獲利中';badgeCls='status-good';}
+    else if(pnlPct>=-3){badge='打平';badgeCls='status-flat';}
+    else if(pnlPct>=-10){badge='小虧';badgeCls='status-loss';}
+    else{badge='虧損';badgeCls='status-bad';}
+  }
+
+  return `<div class="pt-stock-card">
+    <div class="pt-card-left">
+      <div class="pt-ticker">${s.ticker}</div>
+      <div class="pt-name">${s.name}</div>
+      <div class="pt-shares">${s.shares.toLocaleString()} 股 ｜ 均價 ${cur}${fmt(s.avgCost,dp)}</div>
+    </div>
+    <div class="pt-card-center">
+      <div class="pt-current-price">${price!==null ? cur+fmt(price,dp) : '—'}</div>
+      <div class="pt-day-change" style="color:${dayColor}">${dayPct!==null ? fmtPct(dayPct)+' 今日' : '—'}</div>
+    </div>
+    <div class="pt-card-right">
+      <div class="pt-pnl-pct" style="color:${pnlColor}">${fmtPct(pnlPct)}</div>
+      <div class="pt-pnl-amt" style="color:${pnlColor}">${fmtAmt(pnlAmt)}</div>
+      ${badge ? `<span class="pt-status-badge ${badgeCls}">${badge}</span>` : ''}
+    </div>
+  </div>`;
+}
+
+// ── 掃描新聞（切換到新聞雷達 tab）──
+function ptScanNews(groupId) {
+  const group = (window.PORTFOLIO?.groups || []).find(g => g.id === groupId);
+  if (!group) return;
+
+  // 切換到新聞雷達 tab
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    t.classList.toggle('active', t.textContent.includes('新聞雷達'));
+  });
+  const newsPage = document.getElementById('page-news');
+  if (newsPage) newsPage.classList.add('active');
+
+  // 觸發掃描
+  setTimeout(() => ptTriggerGroupScan(group), 150);
+}
+
+async function ptTriggerGroupScan(group) {
+  const errBox = document.getElementById('newsError');
+  if (errBox) errBox.classList.remove('active');
+  const statusEl = document.getElementById('newsScanStatus');
+  if (statusEl) statusEl.textContent = `掃描 ${group.icon} ${group.label} 中...`;
+  if (typeof showNewsSkeleton === 'function') showNewsSkeleton();
+
+  const today = new Date().toLocaleDateString('zh-TW');
+  const tickers = group.stocks.map(s => s.ticker + ' ' + s.name).join('、');
+  const schema = '{"scanDate":"DATE","timeRange":"本週","news":[{"id":1,"headline":"事件標題（繁體中文）","category":"micro","impact":"up或down或mixed","summary":"對持股的潛在影響（20字內）","relevance":"high或medium","source":"來源媒體名稱"}]}';
+  const prompt = `今天是${today}。請使用 Google Search 搜尋過去7天，以下持股的最新重要新聞：${tickers}。搜尋關鍵字：${group.newsKeywords}。只列出真實新聞，不要捏造。找6到10則。所有headline和summary用繁體中文。只輸出純JSON一行不要markdown，格式：${schema.replace('DATE',today)}`;
+
+  try {
+    const raw = await callGemini(prompt, 0, 0, true);
+    const parsed = parseJSON(raw);
+    const news = parsed.news || [];
+    window.scannedNews = news;
+    window.selectedNewsIds = new Set(news.map(n => n.id));
+    if (typeof renderNewsList === 'function') renderNewsList(news);
+    if (statusEl) statusEl.textContent = `找到 ${news.length} 則新聞，分析中...`;
+    if (news.length > 0 && typeof analyzeSelected === 'function') await analyzeSelected();
+  } catch(e) {
+    if (errBox) { errBox.textContent = '掃描失敗：' + e.message; errBox.classList.add('active'); }
+  }
+}
+
+// ── 工具 ──
+function ptShowMsg(msg, type) {
+  const el = document.getElementById('ptStatusMsg');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'pt-status-msg pt-msg-' + (type||'ok');
+  el.style.display = 'block';
+}
+
+function ptSetRefreshBtn(loading) {
+  const btn = document.getElementById('ptRefreshBtn');
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.textContent = loading ? '⏳ 更新中...' : '↻ 更新所有股價';
+}
+
+function ptSleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function ptInit() {
+  // 還原 AV key
+  const savedAv = localStorage.getItem('av_api_key');
+  if (savedAv) {
+    const inp = document.getElementById('avKeyInput');
+    if (inp && !inp.value) {
+      inp.value = savedAv;
+      ptOnAvKeyChange(savedAv);
+    }
+  }
+  ptRenderAll();
+}
 </script>
 </body>
 </html>
