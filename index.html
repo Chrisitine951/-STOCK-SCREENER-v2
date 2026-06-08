@@ -371,8 +371,6 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
     placeholder="貼上你的 Gemini API Key"
     oninput="onApiKeyChange(this.value)" />
   <span class="apikey-status" id="apiKeyStatus">未設定</span>
-  <!-- AV key 透過 GitHub Secrets 注入，隱藏欄位供 JS 讀取 -->
-  <input type="hidden" id="avKeyInput" value="INJECT_AV_KEY" />
   <span class="apikey-hint">取得免費 Key → <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a></span>
 </div>
 
@@ -1708,18 +1706,22 @@ function ptOnAvKeyChange(val) {
 }
 
 // ── 股價 API ──
-async function ptFetchUSPrice(ticker, avKey) {
-  const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${ticker}&apikey=${avKey}`;
-  const res = await fetch(url);
+async function ptFetchUSPrice(ticker) {
+  // 美股也用 Yahoo Finance + corsproxy.io，無 API key 限制
+  const yahooUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=2d`;
+  const url = `https://corsproxy.io/?url=${encodeURIComponent(yahooUrl)}`;
+  const res = await fetch(url, {
+    headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' }
+  });
+  if (!res.ok) throw new Error(`${ticker}: HTTP ${res.status}`);
   const data = await res.json();
-  const q = data['Global Quote'];
-  if (!q || !q['05. price']) throw new Error(`${ticker}: 無資料（可能超出 API 限制）`);
-  return {
-    price: parseFloat(q['05. price']),
-    change: parseFloat(q['09. change']),
-    changePct: parseFloat((q['10. change percent'] || '0').replace('%','')),
-    updatedAt: q['07. latest trading day'] || '',
-  };
+  const meta = data?.chart?.result?.[0]?.meta;
+  if (!meta?.regularMarketPrice) throw new Error(`${ticker}: 無資料`);
+  const price = meta.regularMarketPrice;
+  const prevClose = meta.chartPreviousClose || meta.previousClose || price;
+  const change = price - prevClose;
+  const changePct = prevClose ? (change / prevClose) * 100 : 0;
+  return { price, change, changePct, updatedAt: meta.regularMarketTime ? new Date(meta.regularMarketTime * 1000).toLocaleDateString('zh-TW') : '' };
 }
 
 async function ptFetchTWPrice(ticker, exchange) {
@@ -1758,8 +1760,6 @@ async function ptFetchTWPrice(ticker, exchange) {
 
 async function ptFetchAllPrices() {
   if (PT.loading) return;
-  const avKey = ptGetAvKey();
-  if (!avKey) { ptShowMsg('請先設定 Alpha Vantage API Key', 'error'); return; }
 
   PT.loading = true;
   ptSetRefreshBtn(true);
@@ -1774,23 +1774,20 @@ async function ptFetchAllPrices() {
 
   const errors = [];
 
-  // 台股（Yahoo Finance via corsproxy.io，延遲較短）
+  // 台股（Yahoo Finance via corsproxy.io）
   for (const ticker of twTickers) {
     const stock = groups.flatMap(g => g.stocks).find(s => s.ticker === ticker);
     try { PT.prices[ticker] = await ptFetchTWPrice(ticker, stock?.exchange); }
     catch(e) { errors.push(e.message); PT.prices[ticker] = null; }
-    await ptSleep(200);
+    await ptSleep(300);
   }
 
-  // 美股（每分鐘5次限制，每5支暫停12秒）
+  // 美股（Yahoo Finance via corsproxy.io，無次數限制）
   ptShowMsg(`台股完成，開始抓美股（共 ${usTickers.length} 支）...`, 'loading');
   for (let i = 0; i < usTickers.length; i++) {
-    try { PT.prices[usTickers[i]] = await ptFetchUSPrice(usTickers[i], avKey); }
+    try { PT.prices[usTickers[i]] = await ptFetchUSPrice(usTickers[i]); }
     catch(e) { errors.push(e.message); PT.prices[usTickers[i]] = null; }
-    if ((i+1) % 5 === 0 && i+1 < usTickers.length) {
-      ptShowMsg(`美股 ${i+1}/${usTickers.length} 完成，等待 12 秒...`, 'loading');
-      await ptSleep(12000);
-    } else { await ptSleep(600); }
+    await ptSleep(300);
   }
 
   PT.loading = false;
