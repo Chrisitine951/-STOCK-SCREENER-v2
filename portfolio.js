@@ -133,7 +133,7 @@ window.PORTFOLIO = {
       market: 'TW',
       newsKeywords: '日本商社 巴菲特 伊藤忠 三菱商事 日圓匯率 00955 中信日本商社 ETF 2025',
       stocks: [
-        { ticker: '00955', name: '中信日本商社', shares: 10000, avgCost: 15.6, currency: 'TWD' },
+        { ticker: '00955', name: '中信日本商社', shares: 10000, avgCost: 15.6, currency: 'TWD', exchange: 'TWO' },
       ]
     },
 
