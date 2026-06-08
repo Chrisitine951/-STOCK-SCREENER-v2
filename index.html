@@ -366,10 +366,12 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
 </div>
 
 <div class="apikey-bar">
-  <!-- Gemini API Key 透過 GitHub Secrets 注入 -->
-  <input type="hidden" id="apiKeyInput" value="INJECT_GEMINI_KEY" />
-  <span class="apikey-label">◈ INVESTMENT DESK</span>
-  <span class="apikey-status ok" id="apiKeyStatus">✓ API 已就緒</span>
+  <span class="apikey-label">GEMINI API KEY</span>
+  <input class="apikey-input" id="apiKeyInput" type="password"
+    placeholder="貼上你的 Gemini API Key"
+    oninput="onApiKeyChange(this.value)" />
+  <span class="apikey-status" id="apiKeyStatus">未設定</span>
+  <span class="apikey-hint">取得 Key → <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a></span>
 </div>
 
 <!-- ==================== PAGE 1: SCREENER ==================== -->
@@ -611,12 +613,26 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
 <script>
 document.getElementById('mastDate').textContent = new Date().toLocaleDateString('zh-TW', {year:'numeric',month:'long',day:'numeric'});
 
-// ── API KEY（由 GitHub Secrets 注入）──
+// ── API KEY（存於 localStorage）──
 function getApiKey() {
-  const val = (document.getElementById('apiKeyInput')?.value || '').trim();
-  return (val && !val.startsWith('INJECT_')) ? val : '';
+  return (localStorage.getItem('gemini_api_key') || '').trim();
 }
-function onApiKeyChange(val) {} // 保留空函式避免 HTML 呼叫報錯
+function onApiKeyChange(val) {
+  const status = document.getElementById('apiKeyStatus');
+  const trimmed = val.trim();
+  if (trimmed.length > 20) {
+    status.textContent = '✓ 已設定';
+    status.className = 'apikey-status ok';
+    localStorage.setItem('gemini_api_key', trimmed);
+  } else if (trimmed.length > 0) {
+    status.textContent = '格式有誤';
+    status.className = 'apikey-status';
+  } else {
+    status.textContent = '未設定';
+    status.className = 'apikey-status';
+    localStorage.removeItem('gemini_api_key');
+  }
+}
 
 // ══════════════════════════════════════════
 // NEWS RADAR
@@ -1188,6 +1204,14 @@ ${holdingsList}
 
 window.addEventListener('DOMContentLoaded', () => {
   loadPrefs();
+  const savedKey = localStorage.getItem('gemini_api_key');
+  if (savedKey) {
+    const inp = document.getElementById('apiKeyInput');
+    if (inp) {
+      inp.value = savedKey;
+      setTimeout(() => onApiKeyChange(savedKey), 50);
+    }
+  }
 });
 
 // ══════════════════════════════════════════
