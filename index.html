@@ -1723,10 +1723,10 @@ async function ptFetchUSPrice(ticker, avKey) {
 }
 
 async function ptFetchTWPrice(ticker) {
-  // Yahoo Finance API — 支援台股（上市加 .TW，上櫃加 .TWO）
-  // 先試上市，失敗再試上櫃
+  // 透過 corsproxy.io 繞過 CORS 限制，抓取 Yahoo Finance 台股資料
+  const proxy = 'https://corsproxy.io/?url=';
   const tryFetch = async (symbol) => {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`;
+    const url = proxy + encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`);
     const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
@@ -1742,7 +1742,6 @@ async function ptFetchTWPrice(ticker) {
   try {
     return await tryFetch(`${ticker}.TW`);
   } catch(e) {
-    // 上市失敗，嘗試上櫃
     try {
       return await tryFetch(`${ticker}.TWO`);
     } catch(e2) {
