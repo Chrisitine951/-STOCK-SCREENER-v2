@@ -366,12 +366,10 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
 </div>
 
 <div class="apikey-bar">
-  <span class="apikey-label">GEMINI API KEY</span>
-  <input class="apikey-input" id="apiKeyInput" type="password"
-    placeholder="貼上你的 Gemini API Key"
-    oninput="onApiKeyChange(this.value)" />
-  <span class="apikey-status" id="apiKeyStatus">未設定</span>
-  <span class="apikey-hint">取得免費 Key → <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a></span>
+  <!-- Gemini API Key 透過 GitHub Secrets 注入 -->
+  <input type="hidden" id="apiKeyInput" value="INJECT_GEMINI_KEY" />
+  <span class="apikey-label">◈ INVESTMENT DESK</span>
+  <span class="apikey-status ok" id="apiKeyStatus">✓ API 已就緒</span>
 </div>
 
 <!-- ==================== PAGE 1: SCREENER ==================== -->
@@ -468,14 +466,6 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
               <div class="scan-type-desc">原物料・產業事件・企業財報</div>
             </div>
           </div>
-          <!-- ✦ 新增：核能股追蹤 -->
-          <div class="scan-type-card" id="scanNuclear" onclick="setScanType('nuclear')">
-            <div class="scan-type-icon">⚛️</div>
-            <div>
-              <div class="scan-type-name">核能股追蹤</div>
-              <div class="scan-type-desc">OKLO・SMR・政策・合約進展</div>
-            </div>
-          </div>
         </div>
 
         <div class="sidebar-section" id="microFilters" style="display:none">
@@ -505,37 +495,22 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
       <!-- AUTO MODE CONTROLS -->
       <div id="autoControls" style="display:none">
         <div class="sidebar-section">
-          <div class="sidebar-section-title">自動模式設定</div>
-          <div class="pref-row">
-            <span class="pref-label">執行頻率</span>
-            <select class="pref-select" id="autoFreq">
-              <option>每日早上</option>
-              <option>每週一</option>
-              <option>手動觸發</option>
-            </select>
-          </div>
+          <div class="sidebar-section-title">掃描設定</div>
           <div class="pref-row">
             <span class="pref-label">新聞數量</span>
             <select class="pref-select" id="autoCount">
-              <option>3則重點</option>
               <option>5則重點</option>
+              <option>8則重點</option>
               <option>全部掃描</option>
-            </select>
-          </div>
-          <div class="pref-row">
-            <span class="pref-label">掃描範圍</span>
-            <select class="pref-select" id="autoScope">
-              <option>宏觀＋產業</option>
-              <option>只看宏觀</option>
-              <option>只看產業</option>
             </select>
           </div>
         </div>
 
         <div class="sidebar-section">
-          <div class="sidebar-section-title">我的持倉（AI 優先分析相關新聞）</div>
-          <textarea class="text-input" id="myHoldings" rows="3" placeholder="例如：台積電、聯發科、NVDA、AAPL..."></textarea>
-          <button class="save-pref-btn" onclick="savePrefs()">💾 儲存偏好設定</button>
+          <div class="sidebar-section-title">持倉清單（自動讀取）</div>
+          <div id="autoHoldingsList" style="font-family:var(--mono);font-size:10px;color:var(--ink3);line-height:1.8;padding:6px 0">
+            載入中...
+          </div>
         </div>
 
         <button class="gen-btn" id="autoRunBtn" onclick="runAutoReport()">⚡ 一鍵生成報告</button>
@@ -547,31 +522,6 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
       <div class="news-center-header">
         <div class="panel-label" style="margin-bottom:0">新聞清單</div>
         <div id="newsScanStatus" style="font-family:var(--mono);font-size:11px;color:var(--ink3)"></div>
-      </div>
-
-      <!-- ✦ 核能股持倉資訊 banner（只在 nuclear 模式顯示） -->
-      <div class="nuclear-banner" id="nuclearBanner">
-        <div class="nuclear-banner-title">⚛️ 核能持倉追蹤</div>
-        <div class="nuclear-holdings">
-          <div class="nuclear-holding">
-            <div class="nuclear-holding-ticker">OKLO</div>
-            <div class="nuclear-holding-name">Oklo Inc.</div>
-            <div class="nuclear-holding-stats">
-              <div><div class="nuclear-stat-label">持股</div><div class="nuclear-stat-val">20 股</div></div>
-              <div><div class="nuclear-stat-label">均價</div><div class="nuclear-stat-val">$65.04</div></div>
-              <div><div class="nuclear-stat-label">損益</div><div class="nuclear-stat-pnl">-10.69%</div></div>
-            </div>
-          </div>
-          <div class="nuclear-holding">
-            <div class="nuclear-holding-ticker">SMR</div>
-            <div class="nuclear-holding-name">NuScale Power</div>
-            <div class="nuclear-holding-stats">
-              <div><div class="nuclear-stat-label">持股</div><div class="nuclear-stat-val">30 股</div></div>
-              <div><div class="nuclear-stat-label">均價</div><div class="nuclear-stat-val">$11.57</div></div>
-              <div><div class="nuclear-stat-label">損益</div><div class="nuclear-stat-pnl">-9.27%</div></div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div id="newsListArea">
@@ -652,23 +602,12 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
 <script>
 document.getElementById('mastDate').textContent = new Date().toLocaleDateString('zh-TW', {year:'numeric',month:'long',day:'numeric'});
 
-// ── API KEY ──
-function getApiKey() { return (document.getElementById('apiKeyInput')?.value || '').trim(); }
-function onApiKeyChange(val) {
-  const status = document.getElementById('apiKeyStatus');
-  const trimmed = val.trim();
-  if (trimmed.length > 20) {
-    status.textContent = '✓ 已設定';
-    status.className = 'apikey-status ok';
-    localStorage.setItem('screener_api_key', trimmed);
-  } else if (trimmed.length > 0) {
-    status.textContent = '格式有誤';
-    status.className = 'apikey-status';
-  } else {
-    status.textContent = '未設定';
-    status.className = 'apikey-status';
-  }
+// ── API KEY（由 GitHub Secrets 注入）──
+function getApiKey() {
+  const val = (document.getElementById('apiKeyInput')?.value || '').trim();
+  return (val && !val.startsWith('INJECT_')) ? val : '';
 }
+function onApiKeyChange(val) {} // 保留空函式避免 HTML 呼叫報錯
 
 // ══════════════════════════════════════════
 // NEWS RADAR
@@ -687,46 +626,36 @@ function setMode(mode) {
   document.getElementById('autoControls').style.display = mode === 'auto' ? 'block' : 'none';
 }
 
-// ✦ 修改：setScanType 加入 nuclear
+// ✦ setScanType（移除 nuclear）
 function setScanType(type) {
   currentScanType = type;
   document.getElementById('scanMacro').classList.toggle('active', type === 'macro');
   document.getElementById('scanMicro').classList.toggle('active', type === 'micro');
-  document.getElementById('scanNuclear').classList.toggle('active', type === 'nuclear');
   document.getElementById('microFilters').style.display = type === 'micro' ? 'block' : 'none';
-  // 顯示/隱藏核能持倉 banner
-  document.getElementById('nuclearBanner').classList.toggle('active', type === 'nuclear');
 }
 
 function savePrefs() {
-  savedPrefs = {
-    freq: document.getElementById('autoFreq').value,
-    count: document.getElementById('autoCount').value,
-    scope: document.getElementById('autoScope').value,
-    holdings: document.getElementById('myHoldings').value
-  };
+  savedPrefs = { count: document.getElementById('autoCount')?.value };
   localStorage.setItem('news_prefs', JSON.stringify(savedPrefs));
-  const btn = document.querySelector('.save-pref-btn');
-  btn.textContent = '✓ 已儲存';
-  setTimeout(() => { btn.textContent = '💾 儲存偏好設定'; }, 2000);
 }
 
 function loadPrefs() {
   const saved = localStorage.getItem('news_prefs');
   if (saved) {
     savedPrefs = JSON.parse(saved);
-    if (savedPrefs.holdings) document.getElementById('myHoldings').value = savedPrefs.holdings;
-    if (savedPrefs.freq) document.getElementById('autoFreq').value = savedPrefs.freq;
-    if (savedPrefs.count) document.getElementById('autoCount').value = savedPrefs.count;
-    if (savedPrefs.scope) document.getElementById('autoScope').value = savedPrefs.scope;
+    if (savedPrefs.count) {
+      const el = document.getElementById('autoCount');
+      if (el) el.value = savedPrefs.count;
+    }
   }
-  const email = localStorage.getItem('sheets_client_email');
-  const key = localStorage.getItem('sheets_private_key');
-  const emailEl = document.getElementById('sheetsEmailInput');
-  const keyEl = document.getElementById('sheetsKeyInput');
-  if (email && emailEl) emailEl.value = email;
-  if (key && keyEl) keyEl.value = key;
-  if (email && key) updateSheetStatus('✓ 憑證已設定，分析完成後將自動同步', true);
+  // 顯示自動讀取的持倉清單
+  const listEl = document.getElementById('autoHoldingsList');
+  if (listEl && window.PORTFOLIO) {
+    const all = window.PORTFOLIO.groups.flatMap(g =>
+      g.stocks.map(s => `${s.name} ${s.ticker}`)
+    );
+    listEl.textContent = all.join('　');
+  }
 }
 
 function saveSheetsCreds() {
@@ -1174,26 +1103,65 @@ async function runAutoReport() {
   errBox.classList.remove('active');
   setLoading('autoRunBtn', true, '⚡ 一鍵生成報告');
 
-  const prefs = JSON.parse(localStorage.getItem('news_prefs') || '{}');
-  const holdings = prefs.holdings || '';
-  const count = prefs.count === '5則重點' ? 5 : prefs.count === '全部掃描' ? 10 : 3;
-  const scope = prefs.scope === '只看宏觀' ? '總經政策、地緣政治、央行決策' :
-                prefs.scope === '只看產業' ? '產業事件、企業財報、原物料' :
-                '總經政策、地緣政治、產業事件、企業財報、原物料';
+  const count = document.getElementById('autoCount')?.value === '8則重點' ? 8
+    : document.getElementById('autoCount')?.value === '全部掃描' ? 12 : 5;
   const today = new Date().toLocaleDateString('zh-TW');
-  const holdingsPart = holdings ? '優先納入與以下持倉相關的事件：' + holdings + '。' : '';
 
-  const schema = '{"reportDate":"DATE","autoGenerated":true,"events":[{"headline":"真實新聞標題","impact":"overall_positive或overall_negative或mixed","summary":"2句說明","winners":[{"industry":"產業","stocks":[{"name":"個股","reason":"原因"}]}],"losers":[{"industry":"產業","stocks":[{"name":"個股","reason":"原因"}]}],"action":{"type":"持有或觀望或減碼","reason":"1句建議"}}]}';
-  const prompt = '請使用 Google Search 搜尋今日最重要的' + count + '則影響股市的新聞，範圍：' + scope + '。' + holdingsPart + '步驟二：針對這些新聞逐一分析受益受害產業、個股影響、操作建議。只輸出純JSON一行不要markdown，格式：' + schema.replace('DATE', today) + '。每個事件winners和losers各1到2個，summary限30字，reason限15字。';
+  // 從 portfolio.js 自動讀取持倉清單
+  const groups = window.PORTFOLIO?.groups || [];
+  const holdingsList = groups.map(g => {
+    const tickers = g.stocks.map(s => `${s.name}(${s.ticker})`).join('、');
+    return `${g.icon}${g.label}：${tickers}`;
+  }).join('；');
+
+  const schema = '{"reportDate":"DATE","autoGenerated":true,"overallSentiment":"bullish或bearish或neutral","marketOutlook":"整體研判（30字內）","events":[{"headline":"真實新聞標題（繁體中文）","impact":"overall_positive或overall_negative或mixed","summary":"事件摘要（20字內）","affectedHoldings":["受影響的持股代號，沒有則空陣列"],"winners":[{"industry":"產業","stocks":[{"name":"個股","reason":"原因（8字內）"}]}],"losers":[{"industry":"產業","stocks":[{"name":"個股","reason":"原因（8字內）"}]}],"action":{"type":"持有或觀望或減碼","target":"對象","reason":"建議（15字內）"}}]}';
+
+  const prompt = `今天是${today}。請使用 Google Search 執行以下兩步驟分析：
+
+步驟一：搜尋今日${count}則最重要的宏觀與產業新聞，範圍涵蓋：Fed利率、通膨、地緣政治、半導體、AI、能源、航運、金融。
+
+步驟二：針對每則新聞，標注是否直接影響以下我的持倉：
+${holdingsList}
+若某則新聞與上述持倉相關，在 affectedHoldings 陣列中列出受影響的股票代號。
+
+只輸出純JSON一行不要markdown，格式：${schema.replace('DATE', today)}。
+每個事件 winners/losers 各最多1個，summary限20字，reason限8字。`;
 
   showReportSkeleton();
 
   try {
     const raw = await callGemini(prompt, 0, 0, true);
     const parsed = parseJSON(raw);
+    // 加入 scanType 讓 renderReport 正確處理
+    parsed.events = parsed.events || [];
+    parsed.summary = {
+      overallSentiment: parsed.overallSentiment,
+      marketOutlook: parsed.marketOutlook,
+      topWinners: [],
+      topLosers: [],
+      keyActions: []
+    };
     setMode('explore');
-    renderReport(parsed);
-    document.getElementById('newsListArea').innerHTML = '<div style="background:var(--accent-light);border-left:3px solid var(--accent);padding:10px 14px;border-radius:0 4px 4px 0;font-size:12px;color:var(--ink2)"><strong style="color:var(--accent)">⚡ 自動模式</strong>：AI 已自動選取 ' + (parsed.events||[]).length + ' 則重要新聞並完成分析</div>';
+    renderReport({ ...parsed, scanType: 'auto', newsCount: parsed.events.length, reportDate: today });
+    // 顯示持倉影響摘要在新聞清單區
+    const affectedMap = {};
+    parsed.events.forEach(ev => {
+      (ev.affectedHoldings || []).forEach(ticker => {
+        if (!affectedMap[ticker]) affectedMap[ticker] = [];
+        affectedMap[ticker].push(ev.headline?.slice(0, 20) + '...');
+      });
+    });
+    const affectedKeys = Object.keys(affectedMap);
+    let listHtml = '<div style="background:var(--accent-light);border-left:3px solid var(--accent);padding:10px 14px;border-radius:0 4px 4px 0;font-size:12px;color:var(--ink2);margin-bottom:12px"><strong style="color:var(--accent)">⚡ 自動模式</strong>：掃描完成 · ' + parsed.events.length + ' 則新聞</div>';
+    if (affectedKeys.length) {
+      listHtml += '<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);margin-bottom:8px;letter-spacing:0.08em">▼ 影響你持倉的新聞</div>';
+      affectedKeys.forEach(ticker => {
+        listHtml += '<div style="padding:6px 10px;background:var(--amber-light);border-radius:4px;margin-bottom:6px;font-size:12px"><span style="font-family:var(--mono);font-weight:500;color:var(--amber)">' + ticker + '</span>　' + affectedMap[ticker].join('、') + '</div>';
+      });
+    } else {
+      listHtml += '<div style="font-size:12px;color:var(--ink3);padding:8px 0">今日新聞與持倉無直接關聯</div>';
+    }
+    document.getElementById('newsListArea').innerHTML = listHtml;
   } catch(e) {
     errBox.textContent = '自動報告錯誤：' + e.message;
     errBox.classList.add('active');
@@ -1202,23 +1170,6 @@ async function runAutoReport() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  const savedKey = localStorage.getItem('screener_api_key');
-  if (savedKey) {
-    const inp = document.getElementById('apiKeyInput');
-    if (inp) {
-      inp.value = savedKey;
-      setTimeout(() => onApiKeyChange(savedKey), 50);
-    }
-  }
-  // 還原 Alpha Vantage key
-  const savedAv = localStorage.getItem('av_api_key');
-  if (savedAv) {
-    const avInp = document.getElementById('avKeyInput');
-    if (avInp) {
-      avInp.value = savedAv;
-      setTimeout(() => ptOnAvKeyChange(savedAv), 50);
-    }
-  }
   loadPrefs();
 });
 
