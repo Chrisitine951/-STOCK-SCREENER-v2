@@ -30,6 +30,7 @@ jobs:
 
   auto_news:
     runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
