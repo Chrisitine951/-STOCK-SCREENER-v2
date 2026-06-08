@@ -513,6 +513,15 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
           </div>
         </div>
 
+        <div class="sidebar-section" style="padding-top:14px;border-top:1px solid var(--rule)">
+          <div class="sidebar-section-title">Google Sheets 同步憑證</div>
+          <div style="font-size:11px;color:var(--ink3);margin-bottom:8px">存於本機，不會上傳到 GitHub</div>
+          <input class="text-input" id="sheetsEmailInput" placeholder="client_email（...iam.gserviceaccount.com）" style="margin-bottom:6px;font-size:11px" />
+          <textarea class="text-input" id="sheetsKeyInput" rows="3" placeholder="private_key（-----BEGIN PRIVATE KEY-----...）" style="font-size:10px;margin-bottom:6px"></textarea>
+          <button class="save-pref-btn" onclick="saveSheetsCreds()">🔐 儲存憑證（僅存於本機）</button>
+          <div id="sheetsCredsStatus" style="font-family:var(--mono);font-size:10px;color:var(--ink3);margin-top:6px"></div>
+        </div>
+
         <button class="gen-btn" id="autoRunBtn" onclick="runAutoReport()">⚡ 一鍵生成報告</button>
       </div>
     </div>
@@ -648,6 +657,14 @@ function loadPrefs() {
       if (el) el.value = savedPrefs.count;
     }
   }
+  // 還原 Sheets 憑證顯示狀態
+  const email = localStorage.getItem('sheets_client_email');
+  const key = localStorage.getItem('sheets_private_key');
+  const emailEl = document.getElementById('sheetsEmailInput');
+  const keyEl = document.getElementById('sheetsKeyInput');
+  if (email && emailEl) emailEl.value = email;
+  if (key && keyEl) keyEl.value = key;
+  if (email && key) updateSheetStatus('✓ 憑證已設定，分析完成後將自動同步', true);
   // 顯示自動讀取的持倉清單
   const listEl = document.getElementById('autoHoldingsList');
   if (listEl && window.PORTFOLIO) {
@@ -1176,16 +1193,11 @@ window.addEventListener('DOMContentLoaded', () => {
 // ══════════════════════════════════════════
 // GOOGLE SHEETS INTEGRATION
 // ══════════════════════════════════════════
-const _INJECTED_EMAIL = 'INJECT_CLIENT_EMAIL';
-const _INJECTED_KEY = 'INJECT_PRIVATE_KEY';
 
 function getSheetsConfig() {
-  const email = (_INJECTED_EMAIL && !_INJECTED_EMAIL.startsWith('INJECT_'))
-    ? _INJECTED_EMAIL
-    : localStorage.getItem('sheets_client_email') || '';
-  const rawKey = (_INJECTED_KEY && !_INJECTED_KEY.startsWith('INJECT_'))
-    ? _INJECTED_KEY
-    : localStorage.getItem('sheets_private_key') || '';
+  // Sheets 憑證只從 localStorage 讀取，不注入到程式碼
+  const email = localStorage.getItem('sheets_client_email') || '';
+  const rawKey = localStorage.getItem('sheets_private_key') || '';
   const privateKey = rawKey.replace(/\\n/g, '\n');
   return {
     spreadsheetId: '1Nw-qGajPuk0UEo6bbFtkOwenzw8JmqVyqkMqcNxlgsc',
