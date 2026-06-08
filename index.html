@@ -243,6 +243,7 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
   .news-tag-macro { background: var(--blue-light); color: var(--blue); }
   .news-tag-micro { background: var(--amber-light); color: var(--amber); }
   .news-tag-geo { background: #f0e8f8; color: #6a3a9a; }
+  .news-tag-nuclear { background: #e8f4e8; color: #1a6b1a; }
   .news-summary { font-size: 11px; color: var(--ink3); margin-top: 4px; line-height: 1.6; }
   .news-impact { font-family: var(--mono); font-size: 10px; padding: 1px 6px; border-radius: 2px; }
   .news-impact-up { background: var(--accent-light); color: var(--accent); }
@@ -269,6 +270,26 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
   .skel-short { width: 40%; }
   .skel-medium { width: 70%; }
   .skel-long { width: 95%; }
+
+  /* NUCLEAR BANNER */
+  .nuclear-banner {
+    background: linear-gradient(135deg, #0a1a0a, #0d2010);
+    border: 1px solid rgba(45,90,61,0.4);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    display: none;
+  }
+  .nuclear-banner.active { display: block; }
+  .nuclear-banner-title { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: #4ade80; margin-bottom: 8px; }
+  .nuclear-holdings { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .nuclear-holding { background: rgba(45,90,61,0.15); border-radius: 5px; padding: 8px 10px; }
+  .nuclear-holding-ticker { font-family: var(--mono); font-size: 13px; font-weight: 700; color: #4ade80; }
+  .nuclear-holding-name { font-size: 10px; color: #6a9a6a; margin-top: 1px; }
+  .nuclear-holding-stats { display: flex; gap: 10px; margin-top: 6px; }
+  .nuclear-stat-label { font-family: var(--mono); font-size: 9px; color: #4a6a4a; }
+  .nuclear-stat-val { font-family: var(--mono); font-size: 11px; color: #c8e8c8; }
+  .nuclear-stat-pnl { font-family: var(--mono); font-size: 11px; color: #f87171; }
 
 </style>
 </head>
@@ -391,6 +412,14 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
               <div class="scan-type-desc">原物料・產業事件・企業財報</div>
             </div>
           </div>
+          <!-- ✦ 新增：核能股追蹤 -->
+          <div class="scan-type-card" id="scanNuclear" onclick="setScanType('nuclear')">
+            <div class="scan-type-icon">⚛️</div>
+            <div>
+              <div class="scan-type-name">核能股追蹤</div>
+              <div class="scan-type-desc">OKLO・SMR・政策・合約進展</div>
+            </div>
+          </div>
         </div>
 
         <div class="sidebar-section" id="microFilters" style="display:none">
@@ -414,7 +443,6 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
         </div>
 
         <button class="gen-btn" id="scanBtn" onclick="scanAndAnalyze()">📡 掃描並分析新聞</button>
-
 
       </div>
 
@@ -472,6 +500,31 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
       <div class="news-center-header">
         <div class="panel-label" style="margin-bottom:0">新聞清單</div>
         <div id="newsScanStatus" style="font-family:var(--mono);font-size:11px;color:var(--ink3)"></div>
+      </div>
+
+      <!-- ✦ 核能股持倉資訊 banner（只在 nuclear 模式顯示） -->
+      <div class="nuclear-banner" id="nuclearBanner">
+        <div class="nuclear-banner-title">⚛️ 核能持倉追蹤</div>
+        <div class="nuclear-holdings">
+          <div class="nuclear-holding">
+            <div class="nuclear-holding-ticker">OKLO</div>
+            <div class="nuclear-holding-name">Oklo Inc.</div>
+            <div class="nuclear-holding-stats">
+              <div><div class="nuclear-stat-label">持股</div><div class="nuclear-stat-val">20 股</div></div>
+              <div><div class="nuclear-stat-label">均價</div><div class="nuclear-stat-val">$65.04</div></div>
+              <div><div class="nuclear-stat-label">損益</div><div class="nuclear-stat-pnl">-10.69%</div></div>
+            </div>
+          </div>
+          <div class="nuclear-holding">
+            <div class="nuclear-holding-ticker">SMR</div>
+            <div class="nuclear-holding-name">NuScale Power</div>
+            <div class="nuclear-holding-stats">
+              <div><div class="nuclear-stat-label">持股</div><div class="nuclear-stat-val">30 股</div></div>
+              <div><div class="nuclear-stat-label">均價</div><div class="nuclear-stat-val">$11.57</div></div>
+              <div><div class="nuclear-stat-label">損益</div><div class="nuclear-stat-pnl">-9.27%</div></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div id="newsListArea">
@@ -564,11 +617,15 @@ function setMode(mode) {
   document.getElementById('autoControls').style.display = mode === 'auto' ? 'block' : 'none';
 }
 
+// ✦ 修改：setScanType 加入 nuclear
 function setScanType(type) {
   currentScanType = type;
   document.getElementById('scanMacro').classList.toggle('active', type === 'macro');
   document.getElementById('scanMicro').classList.toggle('active', type === 'micro');
+  document.getElementById('scanNuclear').classList.toggle('active', type === 'nuclear');
   document.getElementById('microFilters').style.display = type === 'micro' ? 'block' : 'none';
+  // 顯示/隱藏核能持倉 banner
+  document.getElementById('nuclearBanner').classList.toggle('active', type === 'nuclear');
 }
 
 function savePrefs() {
@@ -593,7 +650,6 @@ function loadPrefs() {
     if (savedPrefs.count) document.getElementById('autoCount').value = savedPrefs.count;
     if (savedPrefs.scope) document.getElementById('autoScope').value = savedPrefs.scope;
   }
-  // Restore sheets creds
   const email = localStorage.getItem('sheets_client_email');
   const key = localStorage.getItem('sheets_private_key');
   const emailEl = document.getElementById('sheetsEmailInput');
@@ -621,9 +677,7 @@ function updateSheetStatus(msg, ok) {
 
 // ── SCAN NEWS ──
 async function scanAndAnalyze() {
-  // Step 1: scan news
   await scanNews();
-  // Step 2: auto-select all and analyze
   if (scannedNews.length > 0) {
     selectedNewsIds = new Set(scannedNews.map(n => n.id));
     await analyzeSelected();
@@ -647,16 +701,27 @@ async function scanNews() {
   const microTopics = industries.length > 0
     ? industries.join('、') + '相關的產業事件、企業財報、原物料價格、供應鏈變化'
     : '半導體、能源、原物料、企業財報、產業供需、併購事件';
+  // ✦ 新增：核能股專屬 topics
+  const nuclearTopics = 'OKLO (Oklo Inc.) 和 SMR (NuScale Power) 兩支核能股的最新動態，包含：反應爐技術進展、政府合約或補助、NRC監管批准進度、資金與融資狀況、川普核能政策、競爭對手動態（Kairos Power、TerraPower等）、AI資料中心用電需求對核能的影響';
 
-  const topics = currentScanType === 'macro' ? macroTopics : microTopics;
+  const topics = currentScanType === 'macro' ? macroTopics
+    : currentScanType === 'nuclear' ? nuclearTopics
+    : microTopics;
+
   const today = new Date().toLocaleDateString('zh-TW');
 
-  const schema = '{"scanDate":"DATE","timeRange":"RANGE","news":[{"id":1,"headline":"事件標題（請使用真實新聞標題）","category":"macro或micro或geo","impact":"up或down或mixed","summary":"一句話說明對股市的潛在影響","relevance":"high或medium","source":"來源媒體名稱"}]}';
-  const prompt = '請使用 Google Search 搜尋' + timeLabel + '內，真實發生的、可能影響' + markets.join('、') + '股市的重大事件，範圍：' + topics + '。只列出真實存在的新聞，不要捏造。找出8到10則最重要的事件。所有headline和summary必須用繁體中文輸出，即使原始新聞是英文也要翻譯成繁體中文。只輸出純JSON一行不要markdown，格式：' + schema.replace('DATE', today).replace('RANGE', timeLabel) + '。category值：macro=總經政策、micro=產業個股、geo=地緣政治。每則新聞的summary限20字內。';
+  // ✦ 核能模式用不同 prompt，不限制市場
+  let prompt;
+  if (currentScanType === 'nuclear') {
+    const schema = '{"scanDate":"DATE","timeRange":"RANGE","news":[{"id":1,"headline":"事件標題（繁體中文）","category":"micro","impact":"up或down或mixed","summary":"對OKLO或SMR股價的潛在影響（20字內）","relevance":"high或medium","affectedStock":"OKLO或SMR或both","source":"來源媒體名稱"}]}';
+    prompt = '請使用 Google Search 搜尋' + timeLabel + '內，OKLO (Oklo Inc.) 和 SMR (NuScale Power Corporation) 兩支核能股的最新重要新聞。搜尋範圍：' + nuclearTopics + '。只列出真實存在的新聞，不要捏造。每支股票各找3到5則，共6到10則。所有headline和summary必須用繁體中文。只輸出純JSON一行不要markdown，格式：' + schema.replace('DATE', today).replace('RANGE', timeLabel) + '。';
+  } else {
+    const schema = '{"scanDate":"DATE","timeRange":"RANGE","news":[{"id":1,"headline":"事件標題（請使用真實新聞標題）","category":"macro或micro或geo","impact":"up或down或mixed","summary":"一句話說明對股市的潛在影響","relevance":"high或medium","source":"來源媒體名稱"}]}';
+    prompt = '請使用 Google Search 搜尋' + timeLabel + '內，真實發生的、可能影響' + markets.join('、') + '股市的重大事件，範圍：' + topics + '。只列出真實存在的新聞，不要捏造。找出8到10則最重要的事件。所有headline和summary必須用繁體中文輸出，即使原始新聞是英文也要翻譯成繁體中文。只輸出純JSON一行不要markdown，格式：' + schema.replace('DATE', today).replace('RANGE', timeLabel) + '。category值：macro=總經政策、micro=產業個股、geo=地緣政治。每則新聞的summary限20字內。';
+  }
 
   try {
     const raw = await callGemini(prompt, 0, 0, true);
-    // Strip grounding metadata if present, extract JSON
     const parsed = parseJSON(raw);
     scannedNews = parsed.news || [];
     renderNewsList(scannedNews);
@@ -665,7 +730,7 @@ async function scanNews() {
     errBox.classList.add('active');
     document.getElementById('newsListArea').innerHTML = '<div class="empty-results"><div class="empty-icon">📡</div>掃描失敗，請重試</div>';
   }
-  setLoading('scanBtn', false, '📡 掃描最新新聞');
+  setLoading('scanBtn', false, '📡 掃描並分析新聞');
 }
 
 function showNewsSkeleton() {
@@ -688,20 +753,25 @@ function renderNewsList(news) {
     document.getElementById('newsListArea').innerHTML = '<div class="empty-results"><div class="empty-icon">📡</div>未找到相關新聞</div>';
     return;
   }
-  const catLabel = { macro:'總經', micro:'產業', geo:'地緣政治' };
-  const catClass = { macro:'news-tag-macro', micro:'news-tag-micro', geo:'news-tag-geo' };
+  const catLabel = { macro:'總經', micro:'產業', geo:'地緣政治', nuclear:'核能' };
+  const catClass = { macro:'news-tag-macro', micro:'news-tag-micro', geo:'news-tag-geo', nuclear:'news-tag-nuclear' };
   const impactLabel = { up:'利多 ▲', down:'利空 ▼', mixed:'影響混合' };
   const impactClass = { up:'news-impact-up', down:'news-impact-down', mixed:'news-impact-mixed' };
 
   let html = '';
   news.forEach(n => {
+    // ✦ 核能模式：顯示影響哪支股票
+    const affectedBadge = n.affectedStock
+      ? '<span style="font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:2px;background:#e8f4e8;color:#1a6b1a">⚛️ ' + n.affectedStock + '</span>'
+      : '';
     html += `<div class="news-item selected" id="news-item-${n.id}">
       <div class="news-checkbox"></div>
       <div class="news-body">
         <div class="news-headline">${n.headline}</div>
         <div class="news-meta">
-          <span class="news-tag ${catClass[n.category]||'news-tag-macro'}">${catLabel[n.category]||n.category}</span>
+          <span class="news-tag ${catClass[n.category]||'news-tag-micro'}">${catLabel[n.category]||n.category}</span>
           <span class="news-impact ${impactClass[n.impact]||'news-impact-mixed'}">${impactLabel[n.impact]||n.impact}</span>
+          ${affectedBadge}
           ${n.relevance==='high' ? '<span style="font-family:var(--mono);font-size:10px;color:var(--amber)">★ 高關聯</span>' : ''}
           ${n.manual ? '<span style="font-family:var(--mono);font-size:10px;color:var(--ink3)">手動</span>' : ''}
         </div>
@@ -758,35 +828,36 @@ async function analyzeSelected() {
 
   showReportSkeleton();
 
-  // ── 步驟一：綜合摘要（較短，不容易截斷）──
   const holdings = JSON.parse(localStorage.getItem('news_prefs') || '{}').holdings || '';
   const holdingsHint = holdings ? '（特別注意與以下持倉的關聯：' + holdings + '）' : '';
-  const summarySchema = '{"reportDate":"DATE","overallSentiment":"bullish或bearish或neutral","marketOutlook":"整體研判","topWinners":[{"industry":"產業","stocks":["個股"],"reason":"原因","sourcedFrom":"來自第幾則新聞，例如：第1則"}],"topLosers":[{"industry":"產業","stocks":["個股"],"reason":"原因","sourcedFrom":"來自第幾則新聞"}],"keyActions":[{"type":"持有或觀望或減碼","target":"對象","reason":"建議","sourcedFrom":"依據第幾則新聞"}]}';
-  const numberedHeadlines = selected.map((n,i) => '第' + (i+1) + '則：' + n.headline).join('；');
-  const summaryPrompt = '以下是編號過的' + selected.length + '則新聞：' + numberedHeadlines + '。請只根據這些新聞的實際內容，推導出哪些產業受益、哪些受害，每個結論必須在sourcedFrom標明來自第幾則新聞作為依據。若找不到支持某產業受益或受害的新聞，就不要列出該產業。只輸出純JSON一行不要markdown，格式：' + summarySchema.replace('DATE', today) + '。嚴格限制：topWinners最多2個、topLosers最多2個、keyActions最多2條、stocks各1支、reason最多10字、marketOutlook最多30字。';
 
-  // ── 步驟二：個別事件分析（每次只分析2則，分批處理）──
+  // ✦ 核能模式：summary prompt 強調 OKLO / SMR
+  let summaryPrompt;
+  const numberedHeadlines = selected.map((n,i) => '第' + (i+1) + '則：' + n.headline).join('；');
+  const summarySchema = '{"reportDate":"DATE","overallSentiment":"bullish或bearish或neutral","marketOutlook":"整體研判","topWinners":[{"industry":"產業","stocks":["個股"],"reason":"原因","sourcedFrom":"來自第幾則新聞，例如：第1則"}],"topLosers":[{"industry":"產業","stocks":["個股"],"reason":"原因","sourcedFrom":"來自第幾則新聞"}],"keyActions":[{"type":"持有或觀望或減碼","target":"對象","reason":"建議","sourcedFrom":"依據第幾則新聞"}]}';
+
+  if (currentScanType === 'nuclear') {
+    summaryPrompt = '以下是' + selected.length + '則關於核能股 OKLO 和 SMR 的最新新聞：' + numberedHeadlines + '。請只根據這些新聞的實際內容，分析對 OKLO 和 SMR 兩支股票的具體影響，每個結論必須在sourcedFrom標明來自第幾則新聞作為依據。若找不到支持某個結論的新聞，就不要列出。只輸出純JSON一行不要markdown，格式：' + summarySchema.replace('DATE', today) + '。嚴格限制：topWinners最多2個、topLosers最多2個、keyActions最多2條、stocks各1支、reason最多10字、marketOutlook最多30字。';
+  } else {
+    summaryPrompt = '以下是編號過的' + selected.length + '則新聞：' + numberedHeadlines + '。請只根據這些新聞的實際內容，推導出哪些產業受益、哪些受害，每個結論必須在sourcedFrom標明來自第幾則新聞作為依據。若找不到支持某產業受益或受害的新聞，就不要列出該產業。只輸出純JSON一行不要markdown，格式：' + summarySchema.replace('DATE', today) + '。嚴格限制：topWinners最多2個、topLosers最多2個、keyActions最多2條、stocks各1支、reason最多10字、marketOutlook最多30字。';
+  }
+
   const eventSchema = '{"headline":"標題","impact":"overall_positive或overall_negative或mixed","summary":"1句說明","winners":[{"industry":"產業","stocks":[{"name":"個股","reason":"原因"}]}],"losers":[{"industry":"產業","stocks":[{"name":"個股","reason":"原因"}]}],"action":{"type":"持有或觀望或減碼","reason":"1句"}}';
 
   try {
-    // Run summary first
     const summaryRaw = await callGemini(summaryPrompt);
     const summaryParsed = parseJSON(summaryRaw);
 
-    // Run individual analysis in batches of 2
-    const batchSize = 1;  // Process one at a time to prevent JSON truncation
+    const batchSize = 1;
     const eventResults = [];
     for (let i = 0; i < selected.length; i += batchSize) {
       const batch = selected.slice(i, i + batchSize);
-      const batchHeadlines = batch.map((n,j) => (j+1) + '. ' + n.headline).join(' | ');
       const shortHeadline = batch.map((n,i) => (i+1) + '.' + n.headline.slice(0,20)).join('|');
       const eventPrompt = '分析以下新聞對股市影響：' + shortHeadline + '。輸出純JSON陣列不要markdown：[' + eventSchema + ']。每則限制：1個winner、1個loser、各1支股票、summary最多10字、reason最多8字。';
       try {
         const batchRaw = await callGemini(eventPrompt);
-        // Handle both array and object responses
         let batchParsed;
         const cleanRaw = batchRaw.replace(/```json|```/g, '').trim();
-        // Try array first
         const arrMatch = cleanRaw.match(/\[[\s\S]*\]/);
         const objMatch = cleanRaw.match(/\{[\s\S]*\}/);
         if (arrMatch) {
@@ -802,20 +873,19 @@ async function analyzeSelected() {
         console.warn('Batch failed:', be.message);
         batch.forEach(n => eventResults.push({ headline: n.headline, impact: 'mixed', summary: '個別分析暫時失敗', winners: [], losers: [], action: null }));
       }
-      if (i + batchSize < selected.length) await sleep(2000); // Rate limit buffer between each
+      if (i + batchSize < selected.length) await sleep(2000);
     }
 
-    // Combine and render
     const fullReport = {
       reportDate: today,
       newsCount: selected.length,
       summary: summaryParsed,
       events: eventResults,
-      rawNews: selected.map(n => ({ id: n.id, headline: n.headline, category: n.category, impact: n.impact }))
+      rawNews: selected.map(n => ({ id: n.id, headline: n.headline, category: n.category, impact: n.impact })),
+      scanType: currentScanType
     };
 
     renderReport(fullReport);
-    // Save regardless of whether all event batches succeeded
     try { saveReportToStorage(fullReport); } catch(se) { console.warn('Save failed:', se); }
 
   } catch(e) {
@@ -834,11 +904,9 @@ function saveReportToStorage(report) {
     existing.unshift({ ...report, savedAt: new Date().toISOString() });
     if (existing.length > 30) existing.splice(30);
     localStorage.setItem(key, JSON.stringify(existing));
-    console.log('Report saved to localStorage');
   } catch(e) {
     console.warn('Failed to save report:', e);
   }
-  // Also sync to Google Sheets (新聞分析 sheet)
   appendToSheet(report, '新聞分析');
 }
 
@@ -852,7 +920,6 @@ async function saveScreenerToSheet(parsed, market) {
   const usStocks = (parsed.us || []).map(s => s.ticker).join('、');
   const marketLabel = market === 'tw' ? '台股' : market === 'us' ? '美股' : '台股+美股';
 
-  // Build criteria summary
   const twCriteria = market !== 'us' ? Array.from(document.querySelectorAll('#tw-section .criteria-row'))
     .map(r => r.querySelector('.criteria-val').textContent.trim()).join('、') : '';
   const usCriteria = market !== 'tw' ? Array.from(document.querySelectorAll('#us-section .criteria-row'))
@@ -879,7 +946,6 @@ async function saveScreenerToSheet(parsed, market) {
       body: JSON.stringify({ values: [row] })
     });
     if (res.ok) {
-      console.log('✓ Screener saved to Google Sheets');
       showSheetSyncStatus('✓ 選股結果已同步到 Google Sheets');
     } else {
       const err = await res.json();
@@ -887,7 +953,6 @@ async function saveScreenerToSheet(parsed, market) {
     }
   } catch(e) {
     console.warn('Screener Sheets sync failed:', e.message);
-    showSheetSyncStatus('⚠ 選股 Sheets 同步失敗：' + e.message);
   }
 }
 
@@ -918,7 +983,9 @@ function renderReport(data) {
   const actionClass = { '持有': 'action-hold', '觀望': 'action-wait', '減碼': 'action-reduce' };
   const actionIcon = { '持有': '✓', '觀望': '⏸', '減碼': '↓' };
 
-  let html = '<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);margin-bottom:16px;letter-spacing:0.08em">報告日期：' + (data.reportDate || new Date().toLocaleDateString('zh-TW')) + ' · ' + (data.newsCount || events.length) + ' 則事件</div>';
+  // ✦ 核能模式標題
+  const reportTitle = data.scanType === 'nuclear' ? '⚛️ 核能股分析報告' : '分析報告';
+  let html = '<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);margin-bottom:16px;letter-spacing:0.08em">' + reportTitle + ' · ' + (data.reportDate || new Date().toLocaleDateString('zh-TW')) + ' · ' + (data.newsCount || events.length) + ' 則事件</div>';
 
   // ══ SECTION 1: COMPREHENSIVE SUMMARY ══
   if (summary) {
@@ -931,46 +998,40 @@ function renderReport(data) {
     html += '</div>';
     html += '<div style="font-size:13px;color:#c8c4b8;line-height:1.75;margin-bottom:14px">' + (summary.marketOutlook || '') + '</div>';
 
-    // Winners & Losers in summary
     const tw = summary.topWinners || [], tl = summary.topLosers || [];
-    // Always show the grid
-    {
-      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">';
-      html += '<div style="background:rgba(45,90,61,0.25);border-radius:6px;padding:10px 12px">';
-      html += '<div style="font-family:var(--mono);font-size:10px;color:#4ade80;margin-bottom:8px">▲ 整體受益</div>';
-      if (tw.length === 0) {
-        html += '<div style="font-size:11px;color:#4ade8055">根據本次新聞暫無明確受益產業</div>';
-      }
-      tw.forEach(w => {
-        html += '<div style="margin-bottom:8px"><div style="font-family:var(--mono);font-size:11px;font-weight:500;color:#e8f0ea">' + w.industry + '</div>';
-        html += '<div style="font-size:10px;color:#888;margin:2px 0">' + (w.reason||'') + '</div>';
-        html += '<div style="font-size:11px;color:#4ade80;margin-bottom:2px">' + (w.stocks||[]).join('、') + '</div>';
-        if (w.sourcedFrom) html += '<div style="font-size:10px;color:#4ade8066;font-family:var(--mono)">📎 ' + w.sourcedFrom + '</div>';
-        html += '</div>';
-      });
-      html += '</div>';
-      html += '<div style="background:rgba(163,48,48,0.2);border-radius:6px;padding:10px 12px">';
-      html += '<div style="font-family:var(--mono);font-size:10px;color:#f87171;margin-bottom:8px">▼ 整體受害</div>';
-      if (tl.length === 0) {
-        html += '<div style="font-size:11px;color:#f8717155">根據本次新聞暫無明確受害產業</div>';
-      }
-      tl.forEach(l => {
-        html += '<div style="margin-bottom:8px"><div style="font-family:var(--mono);font-size:11px;font-weight:500;color:#fdf0f0">' + l.industry + '</div>';
-        html += '<div style="font-size:10px;color:#888;margin:2px 0">' + (l.reason||'') + '</div>';
-        html += '<div style="font-size:11px;color:#f87171;margin-bottom:2px">' + (l.stocks||[]).join('、') + '</div>';
-        if (l.sourcedFrom) html += '<div style="font-size:10px;color:#f8717166;font-family:var(--mono)">📎 ' + l.sourcedFrom + '</div>';
-        html += '</div>';
-      });
-      html += '</div></div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">';
+    html += '<div style="background:rgba(45,90,61,0.25);border-radius:6px;padding:10px 12px">';
+    html += '<div style="font-family:var(--mono);font-size:10px;color:#4ade80;margin-bottom:8px">▲ 整體受益</div>';
+    if (tw.length === 0) {
+      html += '<div style="font-size:11px;color:#4ade8055">根據本次新聞暫無明確受益</div>';
     }
+    tw.forEach(w => {
+      html += '<div style="margin-bottom:8px"><div style="font-family:var(--mono);font-size:11px;font-weight:500;color:#e8f0ea">' + w.industry + '</div>';
+      html += '<div style="font-size:10px;color:#888;margin:2px 0">' + (w.reason||'') + '</div>';
+      html += '<div style="font-size:11px;color:#4ade80;margin-bottom:2px">' + (w.stocks||[]).join('、') + '</div>';
+      if (w.sourcedFrom) html += '<div style="font-size:10px;color:#4ade8066;font-family:var(--mono)">📎 ' + w.sourcedFrom + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+    html += '<div style="background:rgba(163,48,48,0.2);border-radius:6px;padding:10px 12px">';
+    html += '<div style="font-family:var(--mono);font-size:10px;color:#f87171;margin-bottom:8px">▼ 整體受害</div>';
+    if (tl.length === 0) {
+      html += '<div style="font-size:11px;color:#f8717155">根據本次新聞暫無明確受害</div>';
+    }
+    tl.forEach(l => {
+      html += '<div style="margin-bottom:8px"><div style="font-family:var(--mono);font-size:11px;font-weight:500;color:#fdf0f0">' + l.industry + '</div>';
+      html += '<div style="font-size:10px;color:#888;margin:2px 0">' + (l.reason||'') + '</div>';
+      html += '<div style="font-size:11px;color:#f87171;margin-bottom:2px">' + (l.stocks||[]).join('、') + '</div>';
+      if (l.sourcedFrom) html += '<div style="font-size:10px;color:#f8717166;font-family:var(--mono)">📎 ' + l.sourcedFrom + '</div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
 
-    // Key actions in summary
     const ka = summary.keyActions || [];
     if (ka.length) {
       ka.forEach(a => {
-        const ac = actionClass[a.type] || 'action-wait';
-        const ai = actionIcon[a.type] || '⏸';
         const col = a.type==='持有'?'#4ade80':a.type==='減碼'?'#f87171':'#c17d0a';
+        const ai = actionIcon[a.type] || '⏸';
         html += '<div style="border-left:2px solid ' + col + ';padding:6px 10px;margin-bottom:6px">';
         html += '<span style="font-family:var(--mono);font-size:10px;color:' + col + '">' + ai + ' ' + a.type + '｜' + (a.target||'') + '</span>';
         html += '<div style="font-size:12px;color:#c8c4b8;margin-top:3px">' + (a.reason||'') + '</div>';
@@ -998,7 +1059,6 @@ function renderReport(data) {
       html += '<span style="font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:3px;background:' + ic + '20;color:' + ic + '">' + il + '</span>';
       html += '<span style="font-family:var(--mono);font-size:12px;color:var(--ink3)" id="' + cardId + '-arrow">▼</span></div></div>';
 
-      // Collapsible body
       html += '<div id="' + cardId + '" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--rule2)">';
       const winners = ev.winners || [], losers = ev.losers || [];
       if (winners.length || losers.length) {
@@ -1071,37 +1131,25 @@ async function runAutoReport() {
   setLoading('autoRunBtn', false, '⚡ 一鍵生成報告');
 }
 
-// Load prefs on start
 window.addEventListener('DOMContentLoaded', () => {
-  // Restore API key
   const savedKey = localStorage.getItem('screener_api_key');
   if (savedKey) {
     const inp = document.getElementById('apiKeyInput');
     if (inp) {
       inp.value = savedKey;
-      // Trigger status update after DOM is ready
       setTimeout(() => onApiKeyChange(savedKey), 50);
     }
   }
-  // Restore news prefs
   loadPrefs();
 });
-
-
 
 // ══════════════════════════════════════════
 // GOOGLE SHEETS INTEGRATION
 // ══════════════════════════════════════════
-
-// ── SHEETS CONFIG ──
-// Values below are injected by GitHub Actions from Secrets
-// Fallback to localStorage for local testing
 const _INJECTED_EMAIL = 'INJECT_CLIENT_EMAIL';
 const _INJECTED_KEY = 'INJECT_PRIVATE_KEY';
 
 function getSheetsConfig() {
-  // Use injected values if available (GitHub Actions deployment)
-  // Otherwise fall back to localStorage (local testing)
   const email = (_INJECTED_EMAIL && !_INJECTED_EMAIL.startsWith('INJECT_'))
     ? _INJECTED_EMAIL
     : localStorage.getItem('sheets_client_email') || '';
@@ -1116,13 +1164,10 @@ function getSheetsConfig() {
     sheetName: '新聞分析'
   };
 }
-const SHEETS_CONFIG = { get privateKey() { return getSheetsConfig().privateKey; } };
 
 async function getAccessToken(cfg) {
   cfg = cfg || getSheetsConfig();
   const now = Math.floor(Date.now() / 1000);
-
-  // Proper base64url encode for JWT
   const enc = new TextEncoder();
   const b64url = bytes => btoa(Array.from(bytes, b => String.fromCharCode(b)).join(''))
     .replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
@@ -1139,7 +1184,6 @@ async function getAccessToken(cfg) {
 
   const signingInput = b64urlJson(header) + '.' + b64urlJson(payload);
 
-  // Clean up private key - handle all newline formats
   const pemBody = cfg.privateKey
     .replace(/-----BEGIN PRIVATE KEY-----/g, '')
     .replace(/-----END PRIVATE KEY-----/g, '')
@@ -1153,7 +1197,7 @@ async function getAccessToken(cfg) {
   try {
     keyData = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
   } catch(e) {
-    throw new Error('Private key base64 decode failed: ' + e.message + ' (key length: ' + pemBody.length + ')');
+    throw new Error('Private key base64 decode failed: ' + e.message);
   }
 
   const cryptoKey = await crypto.subtle.importKey(
@@ -1166,7 +1210,6 @@ async function getAccessToken(cfg) {
     'RSASSA-PKCS1-v1_5', cryptoKey, enc.encode(signingInput)
   );
 
-  // Fix: avoid spread operator on large buffers (call stack overflow)
   const sigBytes = new Uint8Array(signatureBuffer);
   const signature = b64url(sigBytes);
   const jwt = signingInput + '.' + signature;
@@ -1186,15 +1229,11 @@ async function getAccessToken(cfg) {
 async function appendToSheet(report, sheetNameOverride) {
   const cfg = getSheetsConfig();
   if (!cfg.clientEmail || !cfg.privateKey) {
-    console.log('Sheets not configured, skipping sync');
     showSheetSyncStatus('⚠ 尚未設定 Google Sheets 憑證');
     return;
   }
-  console.log('Starting Sheets sync, email:', cfg.clientEmail.slice(0,20) + '...');
   try {
     const token = await getAccessToken(cfg);
-    console.log('Token obtained OK');
-    console.log('Appending to sheet:', cfg.spreadsheetId, '/', cfg.sheetName);
     const summary = report.summary || {};
     const winners = (summary.topWinners || []).map(w => w.industry).join('、');
     const losers = (summary.topLosers || []).map(l => l.industry).join('、');
@@ -1223,7 +1262,6 @@ async function appendToSheet(report, sheetNameOverride) {
       const err = await res.json();
       throw new Error(err.error?.message || 'Sheets write failed');
     }
-    console.log('✓ Report saved to Google Sheets');
     showSheetSyncStatus('✓ 已同步到 Google Sheets');
   } catch(e) {
     console.error('Sheets sync failed:', e);
@@ -1250,11 +1288,7 @@ async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 async function callGemini(prompt, modelIndex, retryCount, useSearch) {
   const key = getApiKey();
   if (!key || key.length < 10) throw new Error('請先設定 Gemini API Key');
-  const models = [
-    'gemini-2.5-flash-lite',
-    'gemini-2.5-flash',
-    'gemini-2.5-pro'
-  ];
+  const models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-pro'];
   const idx = modelIndex || 0;
   const retry = retryCount || 0;
   const model = models[idx];
@@ -1264,11 +1298,7 @@ async function callGemini(prompt, modelIndex, retryCount, useSearch) {
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: { temperature: 0.3, maxOutputTokens: 8192 }
   };
-
-  // Enable Google Search grounding for news scanning
-  if (useSearch) {
-    body.tools = [{ google_search: {} }];
-  }
+  if (useSearch) { body.tools = [{ google_search: {} }]; }
 
   const res = await fetch(url, {
     method: 'POST',
@@ -1280,18 +1310,13 @@ async function callGemini(prompt, modelIndex, retryCount, useSearch) {
   if (!res.ok) {
     const msg = data.error?.message || '';
     const isOverload = msg.includes('high demand') || msg.includes('overloaded') || res.status === 503 || res.status === 429;
-
     if (isOverload) {
-      // Retry same model up to 2 times with delay
       if (retry < 2) {
         const waitSec = (retry + 1) * 3;
-        console.log('Rate limited on ' + model + ', retrying in ' + waitSec + 's...');
         await sleep(waitSec * 1000);
         return callGemini(prompt, idx, retry + 1, useSearch);
       }
-      // Then try next model
       if (idx < models.length - 1) {
-        console.log('Switching to fallback model: ' + models[idx+1]);
         await sleep(2000);
         return callGemini(prompt, idx + 1, 0, useSearch);
       }
@@ -1304,33 +1329,26 @@ async function callGemini(prompt, modelIndex, retryCount, useSearch) {
 }
 
 function parseJSON(raw) {
-  // Show debug
   const dbg = document.getElementById('debugBox');
   if (dbg) { dbg.style.display = 'block'; dbg.textContent = 'RAW RESPONSE:\n' + raw.slice(0, 500); }
 
-  // Strip markdown fences
   let clean = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-
-  // Find outermost { }
   const start = clean.indexOf('{');
   const end = clean.lastIndexOf('}');
   if (start === -1 || end === -1) throw new Error('找不到 JSON 大括號');
   clean = clean.slice(start, end + 1);
 
-  // Try direct parse
   try {
     return JSON.parse(clean);
   } catch(e1) {
-    // Try fixing common issues: trailing commas, unescaped newlines
     let fixed = clean
-      .replace(/,\s*([}\]])/g, '$1')   // trailing commas
-      .replace(/\n/g, ' ')              // literal newlines in strings
+      .replace(/,\s*([}\]])/g, '$1')
+      .replace(/\n/g, ' ')
       .replace(/\r/g, '');
     try {
       return JSON.parse(fixed);
     } catch(e2) {
-      if (dbg) dbg.textContent += '\n\nCLEAN ATTEMPT:\n' + clean.slice(0, 500);
-      throw new Error('JSON解析失敗：' + e2.message + '（位置附近：' + clean.slice(300, 330) + '）');
+      throw new Error('JSON解析失敗：' + e2.message);
     }
   }
 }
@@ -1372,13 +1390,13 @@ function editVal(el) {
 // ── TAG TOGGLE ──
 function toggleTag(el, groupId) { el.classList.toggle('active'); }
 function getActiveTags(groupId) {
-  return Array.from(document.querySelectorAll(`#${groupId} .tag-btn.active`)).map(b => b.textContent.trim());
+  return Array.from(document.querySelectorAll('#' + groupId + ' .tag-btn.active')).map(b => b.textContent.trim());
 }
 
 // ── SCREENER ──
 function getCriteria() {
-  const vals = (section) => Array.from(document.querySelectorAll(`#${section}-section .criteria-row`))
-    .map(r => `${r.querySelector('.criteria-label').textContent.trim()}：${r.querySelector('.criteria-val').textContent.trim()}`).join('、');
+  const vals = (section) => Array.from(document.querySelectorAll('#' + section + '-section .criteria-row'))
+    .map(r => r.querySelector('.criteria-label').textContent.trim() + '：' + r.querySelector('.criteria-val').textContent.trim()).join('、');
   return { tw: vals('tw'), us: vals('us') };
 }
 
@@ -1391,22 +1409,12 @@ async function runScreener() {
   const extra = document.getElementById('extraCriteria').value.trim();
   const twCount = currentMarket === 'us' ? 0 : 3;
   const usCount = currentMarket === 'tw' ? 0 : 3;
-  const twPart = twCount > 0 ? `\n【台股條件】${c.tw}。篩出${twCount}檔。` : '';
-  const usPart = usCount > 0 ? `\n【美股條件】${c.us}。篩出${usCount}檔。` : '';
-  const extraPart = extra ? `\n【額外條件】${extra}` : '';
+  const twPart = twCount > 0 ? '\n【台股條件】' + c.tw + '。篩出' + twCount + '檔。' : '';
+  const usPart = usCount > 0 ? '\n【美股條件】' + c.us + '。篩出' + usCount + '檔。' : '';
+  const extraPart = extra ? '\n【額外條件】' + extra : '';
 
-  const twArr = twCount > 0 ? '[FILL_TW_STOCKS]' : '[]';
-  const usArr = usCount > 0 ? '[FILL_US_STOCKS]' : '[]';
-
-  const stockSchema = `{"ticker":"股號 名稱","industry":"產業","type":"value","typeLabel":"深度價值","metrics":[{"label":"P/B","value":"1.2x"}],"desc":"兩句分析","risk":"一句風險","scores":{"value":75,"growth":60,"safety":80}}`;
-
-  const prompt = `你是價值投資分析師。${twPart}${usPart}${extraPart}
-選股原則：分析師覆蓋率低、散戶未發現、護城河清晰、避開題材炒作。
-
-只輸出一行純JSON，禁止markdown和換行：
-{"summary":"一句摘要","tw":[${twCount > 0 ? `${twCount}個物件，每個格式：${stockSchema}` : ''}],"us":[${usCount > 0 ? `${usCount}個物件，每個格式：${stockSchema}` : ''}]}
-
-每個stock的desc限20字內，risk限15字內，metrics只放3個指標。`;
+  const stockSchema = '{"ticker":"股號 名稱","industry":"產業","type":"value","typeLabel":"深度價值","metrics":[{"label":"P/B","value":"1.2x"}],"desc":"兩句分析","risk":"一句風險","scores":{"value":75,"growth":60,"safety":80}}';
+  const prompt = '你是價值投資分析師。' + twPart + usPart + extraPart + '\n選股原則：分析師覆蓋率低、散戶未發現、護城河清晰、避開題材炒作。\n\n只輸出一行純JSON，禁止markdown和換行：\n{"summary":"一句摘要","tw":[' + (twCount > 0 ? twCount + '個物件，每個格式：' + stockSchema : '') + '],"us":[' + (usCount > 0 ? usCount + '個物件，每個格式：' + stockSchema : '') + ']}\n\n每個stock的desc限20字內，risk限15字內，metrics只放3個指標。';
 
   try {
     const raw = await callGemini(prompt);
@@ -1421,7 +1429,7 @@ async function runScreener() {
     renderStockCards(parsed.tw, parsed.us);
     try { saveScreenerToSheet(parsed, currentMarket); } catch(se) { console.warn('Screener save failed:', se); }
   } catch(e) {
-    errBox.textContent = `錯誤：${e.message}`;
+    errBox.textContent = '錯誤：' + e.message;
     errBox.classList.add('active');
   }
   setLoading('screenerRunBtn', false, '▶ 執行篩選');
@@ -1430,106 +1438,19 @@ async function runScreener() {
 function renderStockCards(tw, us) {
   const area = document.getElementById('screenerResults');
   let html = '';
-  if (tw.length > 0) { html += `<div class="result-section-title">🇹🇼 台股候選（${tw.length}檔）</div>`; html += tw.map(stockCard).join(''); }
-  if (us.length > 0) { html += `<div class="result-section-title" style="margin-top:18px">🇺🇸 美股候選（${us.length}檔）</div>`; html += us.map(stockCard).join(''); }
+  if (tw.length > 0) { html += '<div class="result-section-title">🇹🇼 台股候選（' + tw.length + '檔）</div>'; html += tw.map(stockCard).join(''); }
+  if (us.length > 0) { html += '<div class="result-section-title" style="margin-top:18px">🇺🇸 美股候選（' + us.length + '檔）</div>'; html += us.map(stockCard).join(''); }
   if (!html) html = '<div class="empty-results"><div class="empty-icon">◈</div>沒有找到結果</div>';
   area.innerHTML = html;
 }
 
 function stockCard(s) {
   const bc = s.type === 'value' ? 'badge-value' : s.type === 'growth' ? 'badge-growth' : 'badge-recovery';
-  const metrics = (s.metrics||[]).map(m => `<span class="metric-tag">${m.label} <span>${m.value}</span></span>`).join('');
+  const metrics = (s.metrics||[]).map(m => '<span class="metric-tag">' + m.label + ' <span>' + m.value + '</span></span>').join('');
   const sc = s.scores||{};
   const bars = [{n:'估值',v:sc.value||50,c:'#2d5a3d'},{n:'成長',v:sc.growth||50,c:'#2a4a8a'},{n:'安全',v:sc.safety||50,c:'#c17d0a'}]
-    .map(b => `<div class="score-item"><div class="score-name">${b.n}</div><div class="score-track"><div class="score-fill" style="width:${b.v}%;background:${b.c}"></div></div><div class="score-num">${b.v}</div></div>`).join('');
-  return `<div class="stock-card"><div class="card-top"><div><div class="ticker-sym">${s.ticker||''}</div><div class="ticker-ind">${s.industry||''}</div></div><span class="badge ${bc}">${s.typeLabel||s.type||''}</span></div><div class="metrics-row">${metrics}</div><div class="card-desc">${s.desc||''}</div><div class="card-risk">⚠ ${s.risk||''}</div><div class="score-row">${bars}</div></div>`;
-}
-
-// ── EVENT ANALYSIS ──
-async function runEventAnalysis() {
-  const title = document.getElementById('eventTitle').value.trim();
-  if (!title) { alert('請先輸入事件標題'); return; }
-  const errBox = document.getElementById('eventError');
-  errBox.classList.remove('active');
-  setLoading('eventRunBtn', true, '▶ 執行事件分析');
-
-  const types = getActiveTags('eventTypeGroup');
-  const markets = getActiveTags('marketGroup');
-  const focuses = getActiveTags('focusGroup');
-  const detail = document.getElementById('eventDetail').value.trim();
-  const wantWin = focuses.includes('受益產業 + 個股');
-  const wantLose = focuses.includes('受害產業 + 個股');
-  const wantHistory = focuses.includes('歷史類似事件');
-  const wantAction = focuses.includes('操作建議');
-
-  const winnersEx = wantWin ? `,"winners":[{"industry":"半導體","reason":"降息降低資金成本有利擴產","stocks":[{"name":"台積電","reason":"受益資本支出擴張"},{"name":"AMD","reason":"估值重新定價"}]}]` : `,"winners":[]`;
-  const losersEx = wantLose ? `,"losers":[{"industry":"銀行","reason":"降息壓縮利差影響獲利","stocks":[{"name":"摩根大通","reason":"淨利息收入下降"},{"name":"國泰金","reason":"利差收窄"}]}]` : `,"losers":[]`;
-  const historyEx = wantHistory ? `,"history":[{"event":"2019年Fed三次預防性降息","year":"2019","outcome":"標普500全年上漲28%，科技股領漲，債券同步上漲"}]` : `,"history":[]`;
-  const actionsEx = wantAction ? `,"actions":[{"type":"持有","target":"科技股、成長股","reason":"降息環境有利高本益比成長股重新估值。建議持有優質科技股不輕易出場。"},{"type":"觀望","target":"金融股","reason":"利差收窄短期影響獲利能見度。待財報確認影響幅度後再決定是否調整部位。"}]` : `,"actions":[]`;
-
-  const prompt = `你是專業的宏觀投資分析師。請分析以下國際事件對股市的影響：
-
-事件：${title}
-事件類型：${types.join('、')}
-影響市場：${markets.join('、')}${detail ? '\n補充說明：' + detail : ''}
-
-【極重要】只輸出純JSON一行，不要任何說明文字、不要markdown、不要換行符號。完全依照下方範例結構輸出，只替換裡面的數值：
-{"eventTitle":"${title}","summary":"事件背景2到3句摘要","impact":"overall_positive或overall_negative或mixed"${winnersEx}${losersEx}${historyEx}${actionsEx}}
-
-winners和losers各3個產業，每個產業2到3支個股。history提供2個案例。actions提供2到3條建議。`;
-
-  try {
-    const raw = await callGemini(prompt);
-    const parsed = parseJSON(raw);
-    renderEventReport(parsed);
-  } catch(e) {
-    errBox.textContent = `錯誤：${e.message}`;
-    errBox.classList.add('active');
-  }
-  setLoading('eventRunBtn', false, '▶ 執行事件分析');
-}
-
-function renderEventReport(d) {
-  const area = document.getElementById('eventResults');
-  let html = '';
-  if (d.summary) {
-    const impactColor = d.impact === 'overall_positive' ? 'var(--accent)' : d.impact === 'overall_negative' ? 'var(--red)' : 'var(--amber)';
-    const impactLabel = d.impact === 'overall_positive' ? '整體正面' : d.impact === 'overall_negative' ? '整體負面' : '影響混合';
-    html += `<div class="event-impact-card"><div class="event-card-title"><span style="color:${impactColor}">● ${impactLabel}</span>&nbsp;│&nbsp;${d.eventTitle||'事件分析'}</div><div class="card-desc" style="font-size:13px">${d.summary}</div></div>`;
-  }
-  const winners = d.winners || [], losers = d.losers || [];
-  if (winners.length > 0 || losers.length > 0) {
-    html += `<div class="result-section-title">受益 vs 受害產業</div><div class="impact-grid">`;
-    html += `<div class="impact-col win"><div class="impact-col-title">▲ 受益產業</div>`;
-    winners.forEach(w => {
-      html += `<div style="margin-bottom:10px"><div style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--accent);margin-bottom:4px">${w.industry}</div><div style="font-size:11px;color:var(--ink3);margin-bottom:4px">${w.reason||''}</div>`;
-      (w.stocks||[]).forEach(s => { html += `<div class="impact-stock"><span class="impact-stock-name">${s.name}</span><span style="font-size:11px;color:var(--ink3);margin-left:6px">${s.reason||''}</span></div>`; });
-      html += `</div>`;
-    });
-    html += `</div><div class="impact-col lose"><div class="impact-col-title">▼ 受害產業</div>`;
-    losers.forEach(l => {
-      html += `<div style="margin-bottom:10px"><div style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--red);margin-bottom:4px">${l.industry}</div><div style="font-size:11px;color:var(--ink3);margin-bottom:4px">${l.reason||''}</div>`;
-      (l.stocks||[]).forEach(s => { html += `<div class="impact-stock"><span class="impact-stock-name">${s.name}</span><span style="font-size:11px;color:var(--ink3);margin-left:6px">${s.reason||''}</span></div>`; });
-      html += `</div>`;
-    });
-    html += `</div></div>`;
-  }
-  const history = d.history || [];
-  if (history.length > 0) {
-    html += `<div class="result-section-title" style="margin-top:18px">歷史類似事件參考</div>`;
-    history.forEach(h => { html += `<div class="history-box"><div class="history-title">📅 ${h.event}（${h.year}）</div><div class="history-content">${h.outcome}</div></div>`; });
-  }
-  const actions = d.actions || [];
-  if (actions.length > 0) {
-    html += `<div class="result-section-title" style="margin-top:18px">操作建議</div>`;
-    actions.forEach(a => {
-      const cls = a.type === '持有' ? 'action-hold' : a.type === '減碼' ? 'action-reduce' : 'action-wait';
-      const icon = a.type === '持有' ? '✓' : a.type === '減碼' ? '↓' : '⏸';
-      html += `<div class="action-box ${cls}"><div class="action-label">${icon} ${a.type}｜${a.target||''}</div><div class="action-content">${a.reason}</div></div>`;
-    });
-  }
-  if (!html) html = '<div class="empty-results"><div class="empty-icon">🌐</div>沒有找到結果</div>';
-  area.innerHTML = html;
+    .map(b => '<div class="score-item"><div class="score-name">' + b.n + '</div><div class="score-track"><div class="score-fill" style="width:' + b.v + '%;background:' + b.c + '"></div></div><div class="score-num">' + b.v + '</div></div>').join('');
+  return '<div class="stock-card"><div class="card-top"><div><div class="ticker-sym">' + (s.ticker||'') + '</div><div class="ticker-ind">' + (s.industry||'') + '</div></div><span class="badge ' + bc + '">' + (s.typeLabel||s.type||'') + '</span></div><div class="metrics-row">' + metrics + '</div><div class="card-desc">' + (s.desc||'') + '</div><div class="card-risk">⚠ ' + (s.risk||'') + '</div><div class="score-row">' + bars + '</div></div>';
 }
 
 // ══════════════════════════════════════════
@@ -1553,9 +1474,7 @@ async function readSheet(sheetName) {
   const token = await getAccessToken(cfg);
   const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + cfg.spreadsheetId +
     '/values/' + encodeURIComponent(sheetName) + '?majorDimension=ROWS';
-  const res = await fetch(url, {
-    headers: { 'Authorization': 'Bearer ' + token }
-  });
+  const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
   if (!res.ok) {
     const err = await res.json();
     throw new Error(err.error?.message || 'Read failed');
@@ -1587,7 +1506,7 @@ async function loadHistory() {
 function filterHistory() {
   const filters = getActiveTags('historyFilterGroup');
   const now = new Date();
-  const rows = allHistoryRows.slice(1); // skip header
+  const rows = allHistoryRows.slice(1);
 
   const filtered = rows.filter(row => {
     if (!row[0]) return false;
@@ -1615,19 +1534,18 @@ function renderHistoryRows(rows) {
     const isNews = currentHistorySub === 'news';
     const date = row[0] || '';
     const time = row[1] || '';
-    const col3 = row[2] || '';  // newsCount or market
-    const col4 = row[3] || '';  // sentiment or tw stocks
-    const col5 = row[4] || '';  // outlook or us stocks
-    const col6 = row[5] || '';  // winners or criteria
-    const col7 = row[6] || '';  // losers
-    const jsonRaw = isNews ? (row[7] || '') : (row[6] || '');
+    const col3 = row[2] || '';
+    const col4 = row[3] || '';
+    const col5 = row[4] || '';
+    const col6 = row[5] || '';
+    const col7 = row[6] || '';
     const cardId = 'hcard-' + idx;
 
     if (isNews) {
       const sentimentColor = col4 === 'bullish' ? 'var(--accent)' : col4 === 'bearish' ? 'var(--red)' : 'var(--amber)';
       const sentimentLabel = col4 === 'bullish' ? '偏多▲' : col4 === 'bearish' ? '偏空▼' : '中性─';
       html += '<div class="stock-card" style="margin-bottom:10px">';
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleHistoryCard(this.dataset.id)" data-id=\'" + cardId + "\'>';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleHistoryCard(\'' + cardId + '\')">';
       html += '<div style="display:flex;align-items:center;gap:12px">';
       html += '<div style="font-family:var(--mono);font-size:12px;color:var(--ink)">' + date + ' ' + time + '</div>';
       html += '<span style="font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:3px;background:' + sentimentColor + '20;color:' + sentimentColor + '">' + sentimentLabel + '</span>';
@@ -1645,9 +1563,8 @@ function renderHistoryRows(rows) {
       }
       html += '</div></div>';
     } else {
-      // Screener row: date, time, market, tw, us, criteria, json
       html += '<div class="stock-card" style="margin-bottom:10px">';
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleHistoryCard(this.dataset.id)" data-id=\'" + cardId + "\'>';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleHistoryCard(\'' + cardId + '\')">';
       html += '<div style="display:flex;align-items:center;gap:12px">';
       html += '<div style="font-family:var(--mono);font-size:12px;color:var(--ink)">' + date + ' ' + time + '</div>';
       html += '<span style="font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:3px;background:var(--accent-light);color:var(--accent)">' + col3 + '</span>';
