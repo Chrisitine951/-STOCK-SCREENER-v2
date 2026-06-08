@@ -1,47 +1,39 @@
 name: Deploy with Config
-
 on:
   push:
     branches: [ main ]
   schedule:
     - cron: '0 0 * * 1-5'  # 每天 UTC 00:00 = 台灣時間 08:00，週一到週五
-
 permissions:
   contents: write
   pages: write
   id-token: write
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Inject credentials
         run: |
           ESCAPED_KEY=$(printf '%s' "${{ secrets.SHEETS_PRIVATE_KEY }}" | sed 's/\\/\\\\/g; s/|/\\|/g')
           sed -i "s|INJECT_CLIENT_EMAIL|${{ secrets.SHEETS_CLIENT_EMAIL }}|g" index.html
           sed -i "s|INJECT_PRIVATE_KEY|${ESCAPED_KEY}|g" index.html
-
+          sed -i "s|INJECT_AV_KEY|${{ secrets.AV_API_KEY }}|g" index.html
       - name: Deploy to Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./
-
   auto_news:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
       - name: Install dependencies
         run: pip install requests google-auth google-api-python-client
-
       - name: Run auto news analysis
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
