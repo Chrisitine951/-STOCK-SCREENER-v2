@@ -698,7 +698,7 @@ function saveSheetsCreds() {
   if (!email.includes('iam.gserviceaccount.com')) { updateSheetStatus('email 格式有誤'); return; }
   if (!key.includes('BEGIN PRIVATE KEY')) { updateSheetStatus('private key 格式有誤'); return; }
   localStorage.setItem('sheets_client_email', email);
-  localStorage.setItem('sheets_private_key', key);
+  localStorage.setItem('sheets_private_key', key.replace(/\\n/g, '\n'));
   updateSheetStatus('✓ 憑證已儲存！下次分析完成後將同步到 Google Sheets', true);
 }
 
