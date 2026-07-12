@@ -1384,7 +1384,7 @@ async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 async function callGemini(prompt, modelIndex, retryCount, useSearch) {
   const key = getApiKey();
   if (!key || key.length < 10) throw new Error('請先設定 Gemini API Key');
-  const models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-pro'];
+  const models = ['gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-3.1-pro-preview'];
   const idx = modelIndex || 0;
   const retry = retryCount || 0;
   const model = models[idx];
