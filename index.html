@@ -568,6 +568,7 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
     <div style="display:flex;gap:0;margin-bottom:24px;border:1px solid var(--rule);border-radius:6px;overflow:hidden;width:fit-content">
       <button class="history-sub-tab active" id="hsub-news" onclick="switchHistorySub('news')" style="padding:8px 20px;font-family:var(--mono);font-size:12px;border:none;background:var(--ink);color:var(--bg);cursor:pointer">📡 新聞分析</button>
       <button class="history-sub-tab" id="hsub-screener" onclick="switchHistorySub('screener')" style="padding:8px 20px;font-family:var(--mono);font-size:12px;border:none;background:transparent;color:var(--ink3);cursor:pointer;border-left:1px solid var(--rule)">📋 選股記錄</button>
+      <button class="history-sub-tab" id="hsub-journal" onclick="switchHistorySub('journal')" style="padding:8px 20px;font-family:var(--mono);font-size:12px;border:none;background:transparent;color:var(--ink3);cursor:pointer;border-left:1px solid var(--rule)">📒 交易日誌</button>
     </div>
 
     <!-- Filter row -->
@@ -578,10 +579,12 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
         <button class="tag-btn" onclick="toggleTag(this,'historyFilterGroup');filterHistory()">本週</button>
         <button class="tag-btn" onclick="toggleTag(this,'historyFilterGroup');filterHistory()">本月</button>
       </div>
-      <button onclick="loadHistory()" style="margin-left:auto;font-family:var(--mono);font-size:11px;padding:6px 14px;background:transparent;border:1px solid var(--rule);border-radius:4px;cursor:pointer;color:var(--ink2)">↻ 重新載入</button>
+      <button id="perfBtn" onclick="evalScreenerPerf()" style="display:none;margin-left:auto;font-family:var(--mono);font-size:11px;padding:6px 14px;background:var(--ink);color:var(--bg);border:none;border-radius:4px;cursor:pointer">📊 計算 AI 選股績效</button>
+      <button onclick="loadHistory()" style="margin-left:auto;font-family:var(--mono);font-size:11px;padding:6px 14px;background:transparent;border:1px solid var(--rule);border-radius:4px;cursor:pointer;color:var(--ink2)" id="historyReloadBtn">↻ 重新載入</button>
     </div>
 
     <div class="error-box" id="historyError"></div>
+    <div id="perfArea"></div>
     <div id="historyLoading" style="display:none;font-family:var(--mono);font-size:12px;color:var(--ink3);padding:20px 0">載入中...</div>
     <div id="historyContent"></div>
   </div>
@@ -597,6 +600,33 @@ textarea.text-input { resize: vertical; line-height: 1.7; }
       <button class="pt-refresh-btn" id="ptRefreshBtn" onclick="ptFetchAllPrices()">↻ 更新所有股價</button>
       <div class="pt-status-msg" id="ptStatusMsg" style="display:none"></div>
       <div class="pt-updated" id="ptUpdatedAt"></div>
+    </div>
+
+    <!-- Dashboard summary -->
+    <div id="ptDashboard"></div>
+
+    <!-- Trading journal -->
+    <div class="stock-card" style="margin-bottom:18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="jToggle()">
+        <div style="font-family:var(--mono);font-size:12px;color:var(--ink);font-weight:600">📒 交易日誌 <span style="color:var(--ink3);font-weight:400">— 買賣時記一句「為什麼」</span></div>
+        <span style="font-family:var(--mono);font-size:12px;color:var(--ink3)" id="jArrow">▼</span>
+      </div>
+      <div id="jForm" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--rule2)">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:8px">
+          <input type="date" id="jDate" style="font-family:var(--mono);font-size:12px;padding:7px 10px;border:1px solid var(--rule);border-radius:4px;background:var(--bg);color:var(--ink)">
+          <input type="text" id="jTicker" placeholder="代號（如 2634）" style="font-family:var(--mono);font-size:12px;padding:7px 10px;border:1px solid var(--rule);border-radius:4px;background:var(--bg);color:var(--ink)">
+          <select id="jAction" style="font-family:var(--mono);font-size:12px;padding:7px 10px;border:1px solid var(--rule);border-radius:4px;background:var(--bg);color:var(--ink)">
+            <option>買進</option><option>賣出</option><option>備註</option>
+          </select>
+          <input type="text" id="jPrice" placeholder="價格（選填）" style="font-family:var(--mono);font-size:12px;padding:7px 10px;border:1px solid var(--rule);border-radius:4px;background:var(--bg);color:var(--ink)">
+          <input type="text" id="jShares" placeholder="股數（選填）" style="font-family:var(--mono);font-size:12px;padding:7px 10px;border:1px solid var(--rule);border-radius:4px;background:var(--bg);color:var(--ink)">
+        </div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="jReason" placeholder="為什麼？（必填，例：國防預算題材，目標 160）" style="flex:1;font-size:12px;padding:7px 10px;border:1px solid var(--rule);border-radius:4px;background:var(--bg);color:var(--ink)">
+          <button id="jSubmitBtn" onclick="jSubmit()" style="font-family:var(--mono);font-size:12px;padding:7px 18px;background:var(--ink);color:var(--bg);border:none;border-radius:4px;cursor:pointer;white-space:nowrap">＋ 記一筆</button>
+        </div>
+        <div style="font-size:10px;color:var(--ink3);margin-top:6px;font-family:var(--mono)">寫入 Google Sheets「交易日誌」分頁 · 可到 📁 歷史記錄頁回顧</div>
+      </div>
     </div>
 
     <!-- Groups grid -->
@@ -1479,11 +1509,17 @@ async function runScreener() {
   const usPart = usCount > 0 ? '\n【美股條件】' + c.us + '。篩出' + usCount + '檔。' : '';
   const extraPart = extra ? '\n【額外條件】' + extra : '';
 
-  const stockSchema = '{"ticker":"股號 名稱","industry":"產業","type":"value","typeLabel":"深度價值","metrics":[{"label":"P/B","value":"1.2x"}],"desc":"兩句分析","risk":"一句風險","scores":{"value":75,"growth":60,"safety":80}}';
-  const prompt = '你是價值投資分析師。' + twPart + usPart + extraPart + '\n選股原則：分析師覆蓋率低、散戶未發現、護城河清晰、避開題材炒作。\n\n只輸出一行純JSON，禁止markdown和換行：\n{"summary":"一句摘要","tw":[' + (twCount > 0 ? twCount + '個物件，每個格式：' + stockSchema : '') + '],"us":[' + (usCount > 0 ? usCount + '個物件，每個格式：' + stockSchema : '') + ']}\n\n每個stock的desc限20字內，risk限15字內，metrics只放3個指標。';
+  const today = new Date().toLocaleDateString('zh-TW');
+  const stockSchema = '{"ticker":"股號 名稱","industry":"產業","type":"value或growth或recovery","typeLabel":"深度價值","metrics":[{"label":"P/B","value":"1.2x"}],"desc":"兩句分析","risk":"一句風險","basis":"依據來源（哪份財報或哪則新聞，15字內）","scores":{"value":75,"growth":60,"safety":80}}';
+  const prompt = '今天是' + today + '。你是嚴謹的價值投資分析師。請使用 Google Search 先查證再選股：\n'
+    + '步驟一：搜尋符合以下條件的真實上市公司，查閱其最近一季財報數據與近期新聞。\n'
+    + '步驟二：只推薦有查證依據的公司。每檔股票必須在basis欄位寫出具體依據，例如「2026Q1 EPS年增32%」或「6月取得CoWoS擴產訂單」。'
+    + twPart + usPart + extraPart
+    + '\n\n嚴格規則：\n1. metrics只能填搜尋查證到的真實數據，查不到的指標填"N/A"，絕對禁止捏造數字。\n2. 沒有basis依據的股票不准列出，寧可少列。\n3. 避開近期已大漲的熱門題材股。\n4. ticker必須是真實存在的上市代號。'
+    + '\n\n只輸出一行純JSON，禁止markdown和換行：\n{"summary":"一句摘要","tw":[' + (twCount > 0 ? twCount + '個物件，每個格式：' + stockSchema : '') + '],"us":[' + (usCount > 0 ? usCount + '個物件，每個格式：' + stockSchema : '') + ']}\n\n每個stock的desc限20字內，risk限15字內，metrics只放3個指標。';
 
   try {
-    const raw = await callGemini(prompt);
+    const raw = await callGemini(prompt, 1, 0, true);
     const parsed = parseJSON(raw);
     const dbg = document.getElementById('debugBox');
     if (dbg) dbg.style.display = 'none';
@@ -1516,7 +1552,7 @@ function stockCard(s) {
   const sc = s.scores||{};
   const bars = [{n:'估值',v:sc.value||50,c:'#2d5a3d'},{n:'成長',v:sc.growth||50,c:'#2a4a8a'},{n:'安全',v:sc.safety||50,c:'#c17d0a'}]
     .map(b => '<div class="score-item"><div class="score-name">' + b.n + '</div><div class="score-track"><div class="score-fill" style="width:' + b.v + '%;background:' + b.c + '"></div></div><div class="score-num">' + b.v + '</div></div>').join('');
-  return '<div class="stock-card"><div class="card-top"><div><div class="ticker-sym">' + (s.ticker||'') + '</div><div class="ticker-ind">' + (s.industry||'') + '</div></div><span class="badge ' + bc + '">' + (s.typeLabel||s.type||'') + '</span></div><div class="metrics-row">' + metrics + '</div><div class="card-desc">' + (s.desc||'') + '</div><div class="card-risk">⚠ ' + (s.risk||'') + '</div><div class="score-row">' + bars + '</div></div>';
+  return '<div class="stock-card"><div class="card-top"><div><div class="ticker-sym">' + (s.ticker||'') + '</div><div class="ticker-ind">' + (s.industry||'') + '</div></div><span class="badge ' + bc + '">' + (s.typeLabel||s.type||'') + '</span></div><div class="metrics-row">' + metrics + '</div><div class="card-desc">' + (s.desc||'') + '</div>' + (s.basis ? '<div class="card-desc" style="font-size:11px;color:var(--ink3)">📎 依據：' + s.basis + '</div>' : '') + '<div class="card-risk">⚠ ' + (s.risk||'') + '</div><div class="score-row">' + bars + '</div></div>';
 }
 
 // ══════════════════════════════════════════
@@ -1527,10 +1563,16 @@ let allHistoryRows = [];
 
 function switchHistorySub(sub) {
   currentHistorySub = sub;
-  document.getElementById('hsub-news').style.background = sub === 'news' ? 'var(--ink)' : 'transparent';
-  document.getElementById('hsub-news').style.color = sub === 'news' ? 'var(--bg)' : 'var(--ink3)';
-  document.getElementById('hsub-screener').style.background = sub === 'screener' ? 'var(--ink)' : 'transparent';
-  document.getElementById('hsub-screener').style.color = sub === 'screener' ? 'var(--bg)' : 'var(--ink3)';
+  ['news', 'screener', 'journal'].forEach(k => {
+    const btn = document.getElementById('hsub-' + k);
+    if (!btn) return;
+    btn.style.background = sub === k ? 'var(--ink)' : 'transparent';
+    btn.style.color = sub === k ? 'var(--bg)' : 'var(--ink3)';
+  });
+  const perfBtn = document.getElementById('perfBtn');
+  if (perfBtn) perfBtn.style.display = sub === 'screener' ? 'inline-block' : 'none';
+  const perfArea = document.getElementById('perfArea');
+  if (perfArea) perfArea.innerHTML = '';
   loadHistory();
 }
 
@@ -1558,12 +1600,17 @@ async function loadHistory() {
   content.innerHTML = '';
 
   try {
-    const sheetName = currentHistorySub === 'news' ? '新聞分析' : '選股記錄';
+    const sheetName = currentHistorySub === 'news' ? '新聞分析'
+      : currentHistorySub === 'journal' ? '交易日誌' : '選股記錄';
     const rows = await readSheet(sheetName);
     allHistoryRows = rows;
     filterHistory();
   } catch(e) {
-    errBox.textContent = '載入失敗：' + e.message;
+    if (currentHistorySub === 'journal' && /range|parse|找不到|not found/i.test(e.message)) {
+      errBox.textContent = '找不到「交易日誌」分頁。請到 Google Sheets 新增一個名為「交易日誌」的分頁後再試。';
+    } else {
+      errBox.textContent = '載入失敗：' + e.message;
+    }
     errBox.classList.add('active');
   }
   loading.style.display = 'none';
@@ -1606,6 +1653,22 @@ function renderHistoryRows(rows) {
     const col6 = row[5] || '';
     const col7 = row[6] || '';
     const cardId = 'hcard-' + idx;
+
+    if (currentHistorySub === 'journal') {
+      // 交易日誌列：[日期,時間,代號,動作,價格,股數,原因]
+      const actColor = col4 === '買進' ? 'var(--accent)' : col4 === '賣出' ? 'var(--red)' : 'var(--amber)';
+      html += '<div class="stock-card" style="margin-bottom:10px">';
+      html += '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">';
+      html += '<div style="font-family:var(--mono);font-size:12px;color:var(--ink)">' + date + '</div>';
+      html += '<span style="font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:3px;background:' + actColor + '20;color:' + actColor + ';font-weight:600">' + col4 + '</span>';
+      html += '<span style="font-family:var(--mono);font-size:13px;color:var(--ink);font-weight:600">' + col3 + '</span>';
+      if (col5) html += '<span style="font-family:var(--mono);font-size:11px;color:var(--ink2)">@ ' + col5 + '</span>';
+      if (col6) html += '<span style="font-family:var(--mono);font-size:11px;color:var(--ink3)">' + col6 + ' 股</span>';
+      html += '</div>';
+      html += '<div style="font-size:12px;color:var(--ink2);margin-top:6px;padding-left:2px">💭 ' + col7 + '</div>';
+      html += '</div>';
+      return;
+    }
 
     if (isNews) {
       const sentimentColor = col4 === 'bullish' ? 'var(--accent)' : col4 === 'bearish' ? 'var(--red)' : 'var(--amber)';
@@ -1660,6 +1723,116 @@ function toggleHistoryCard(id) {
   if (arrow) arrow.textContent = isOpen ? '▼' : '▲';
 }
 
+// ══════════════════════════════════════════
+// AI 選股績效回顧
+// ══════════════════════════════════════════
+async function fetchYahooSeries(symbol, fromDateStr) {
+  const from = new Date(fromDateStr);
+  if (isNaN(from)) throw new Error('日期無效');
+  const p1 = Math.floor(from.getTime() / 1000) - 86400 * 3;
+  const p2 = Math.floor(Date.now() / 1000);
+  const yahooUrl = 'https://query2.finance.yahoo.com/v8/finance/chart/' + symbol + '?period1=' + p1 + '&period2=' + p2 + '&interval=1d';
+  const proxies = [
+    'https://corsproxy.io/?url=' + encodeURIComponent(yahooUrl),
+    'https://api.allorigins.win/raw?url=' + encodeURIComponent(yahooUrl)
+  ];
+  let lastErr;
+  for (const url of proxies) {
+    try {
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const closes = (data?.chart?.result?.[0]?.indicators?.quote?.[0]?.close || []).filter(c => c != null);
+      if (closes.length < 1) throw new Error('無資料');
+      return { first: closes[0], last: closes[closes.length - 1] };
+    } catch(e) { lastErr = e; }
+  }
+  throw new Error(symbol + ': ' + (lastErr?.message || '失敗'));
+}
+
+async function evalScreenerPerf() {
+  const area = document.getElementById('perfArea');
+  const dataRows = (allHistoryRows || []).slice(1).filter(r => r[0]);
+  if (!dataRows.length) {
+    area.innerHTML = '<div class="error-box active">請先載入選股記錄</div>';
+    return;
+  }
+
+  // 取最近 5 次選股記錄，解析 ticker（欄位：日期,時間,市場,台股,美股,條件,json）
+  const recent = dataRows.slice(-5);
+  const tasks = [];
+  const parseTickers = str => (str && str !== '—' ? str.split('、') : [])
+    .map(x => x.trim().split(/\s+/)[0]).filter(Boolean);
+  recent.forEach(r => {
+    parseTickers(r[3]).forEach(t => tasks.push({ date: r[0], ticker: t, tw: true }));
+    parseTickers(r[4]).forEach(t => tasks.push({ date: r[0], ticker: t, tw: false }));
+  });
+  const seen = new Set();
+  const uniq = tasks.filter(t => {
+    const k = t.date + '|' + t.ticker;
+    if (seen.has(k)) return false;
+    seen.add(k); return true;
+  }).slice(0, 25);
+
+  if (!uniq.length) {
+    area.innerHTML = '<div class="error-box active">記錄中找不到可解析的股票代號</div>';
+    return;
+  }
+
+  const btn = document.getElementById('perfBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 計算中...'; }
+
+  const results = [];
+  for (let i = 0; i < uniq.length; i++) {
+    const t = uniq[i];
+    area.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:var(--ink3);padding:10px 0">回測中 ' + (i + 1) + '/' + uniq.length + '（' + t.ticker + '）...</div>';
+    try {
+      let series;
+      if (t.tw) {
+        try { series = await fetchYahooSeries(t.ticker + '.TW', t.date); }
+        catch(e) { series = await fetchYahooSeries(t.ticker + '.TWO', t.date); }
+      } else {
+        series = await fetchYahooSeries(t.ticker, t.date);
+      }
+      const ret = (series.last - series.first) / series.first * 100;
+      results.push({ ...t, recPrice: series.first, curPrice: series.last, ret });
+    } catch(e) {
+      results.push({ ...t, error: true });
+    }
+    await new Promise(r => setTimeout(r, 250));
+  }
+
+  const ok = results.filter(r => !r.error);
+  const wins = ok.filter(r => r.ret > 0).length;
+  const avg = ok.length ? ok.reduce((a, b) => a + b.ret, 0) / ok.length : 0;
+  const hitRate = ok.length ? (wins / ok.length * 100) : 0;
+  const avgColor = avg >= 0 ? 'var(--accent)' : 'var(--red)';
+
+  let html = '<div class="stock-card" style="margin-bottom:18px">';
+  html += '<div style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--ink);margin-bottom:10px">📊 AI 選股績效（最近 ' + recent.length + ' 次推薦，推薦日 → 今日）</div>';
+  html += '<div style="display:flex;gap:24px;margin-bottom:14px;flex-wrap:wrap">';
+  html += '<div><div style="font-family:var(--mono);font-size:10px;color:var(--ink3)">命中率（上漲檔數）</div><div style="font-size:18px;font-weight:600;color:var(--ink)">' + wins + '/' + ok.length + '（' + hitRate.toFixed(0) + '%）</div></div>';
+  html += '<div><div style="font-family:var(--mono);font-size:10px;color:var(--ink3)">平均報酬</div><div style="font-size:18px;font-weight:600;color:' + avgColor + '">' + (avg >= 0 ? '+' : '') + avg.toFixed(2) + '%</div></div>';
+  html += '</div>';
+  html += '<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);margin-bottom:6px">代號｜推薦日｜推薦時價格 → 現價｜報酬</div>';
+  results.sort((a, b) => (b.ret ?? -999) - (a.ret ?? -999)).forEach(r => {
+    if (r.error) {
+      html += '<div style="display:flex;gap:10px;padding:5px 0;border-bottom:1px solid var(--rule2);font-size:12px;color:var(--ink3)"><span style="font-family:var(--mono);min-width:70px">' + r.ticker + '</span><span>' + r.date + '</span><span>無法取得報價</span></div>';
+    } else {
+      const c = r.ret >= 0 ? 'var(--accent)' : 'var(--red)';
+      html += '<div style="display:flex;gap:10px;padding:5px 0;border-bottom:1px solid var(--rule2);font-size:12px;align-items:center">'
+        + '<span style="font-family:var(--mono);min-width:70px;font-weight:600;color:var(--ink)">' + r.ticker + '</span>'
+        + '<span style="color:var(--ink3);font-family:var(--mono);font-size:11px">' + r.date + '</span>'
+        + '<span style="color:var(--ink2);font-family:var(--mono);font-size:11px">' + r.recPrice.toFixed(2) + ' → ' + r.curPrice.toFixed(2) + '</span>'
+        + '<span style="margin-left:auto;font-family:var(--mono);font-weight:600;color:' + c + '">' + (r.ret >= 0 ? '+' : '') + r.ret.toFixed(2) + '%</span></div>';
+    }
+  });
+  html += '<div style="font-size:10px;color:var(--ink3);margin-top:10px;font-family:var(--mono)">＊命中率長期低於 50% 時，選股結果只宜當靈感來源，不宜當決策依據</div>';
+  html += '</div>';
+  area.innerHTML = html;
+  if (btn) { btn.disabled = false; btn.textContent = '📊 計算 AI 選股績效'; }
+}
+
 </script>
 
 <script src="portfolio.js"></script>
@@ -1672,6 +1845,7 @@ function toggleHistoryCard(id) {
 // ─────────────────────────────────────────
 const PT = {
   prices: {},
+  fx: null,      // USD/TWD 匯率（更新股價時自動抓取）
   loading: false,
 };
 
@@ -1693,55 +1867,44 @@ function ptOnAvKeyChange(val) {
 }
 
 // ── 股價 API ──
+// 共用報價抓取：雙 proxy 備援（corsproxy.io 掛掉時自動改走 allorigins）
+async function ptFetchYahoo(symbol) {
+  const yahooUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`;
+  const proxies = [
+    `https://corsproxy.io/?url=${encodeURIComponent(yahooUrl)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`
+  ];
+  let lastErr;
+  for (const url of proxies) {
+    try {
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const meta = data?.chart?.result?.[0]?.meta;
+      if (!meta?.regularMarketPrice) throw new Error('無資料');
+      const price = meta.regularMarketPrice;
+      const prevClose = meta.chartPreviousClose || meta.previousClose || price;
+      const change = price - prevClose;
+      const changePct = prevClose ? (change / prevClose) * 100 : 0;
+      return { price, change, changePct, updatedAt: meta.regularMarketTime ? new Date(meta.regularMarketTime * 1000).toLocaleDateString('zh-TW') : new Date().toLocaleDateString('zh-TW') };
+    } catch(e) { lastErr = e; }
+  }
+  throw new Error(`${symbol}: ${lastErr?.message || '無法取得報價'}`);
+}
+
 async function ptFetchUSPrice(ticker) {
-  // 美股也用 Yahoo Finance + corsproxy.io，無 API key 限制
-  const yahooUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=2d`;
-  const url = `https://corsproxy.io/?url=${encodeURIComponent(yahooUrl)}`;
-  const res = await fetch(url, {
-    headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' }
-  });
-  if (!res.ok) throw new Error(`${ticker}: HTTP ${res.status}`);
-  const data = await res.json();
-  const meta = data?.chart?.result?.[0]?.meta;
-  if (!meta?.regularMarketPrice) throw new Error(`${ticker}: 無資料`);
-  const price = meta.regularMarketPrice;
-  const prevClose = meta.chartPreviousClose || meta.previousClose || price;
-  const change = price - prevClose;
-  const changePct = prevClose ? (change / prevClose) * 100 : 0;
-  return { price, change, changePct, updatedAt: meta.regularMarketTime ? new Date(meta.regularMarketTime * 1000).toLocaleDateString('zh-TW') : '' };
+  return await ptFetchYahoo(ticker);
 }
 
 async function ptFetchTWPrice(ticker, exchange) {
-  // 透過 corsproxy.io 繞過 CORS，使用 Yahoo Finance query2 endpoint
-  const tryFetch = async (symbol) => {
-    const yahooUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`;
-    const url = `https://corsproxy.io/?url=${encodeURIComponent(yahooUrl)}`;
-    const res = await fetch(url, {
-      headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' }
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    const meta = data?.chart?.result?.[0]?.meta;
-    if (!meta?.regularMarketPrice) throw new Error('無資料');
-    const price = meta.regularMarketPrice;
-    const prevClose = meta.chartPreviousClose || meta.previousClose || price;
-    const change = price - prevClose;
-    const changePct = prevClose ? (change / prevClose) * 100 : 0;
-    return { price, change, changePct, updatedAt: new Date().toLocaleDateString('zh-TW') };
-  };
-
   // 若 portfolio.js 已標記 exchange，直接用指定交易所；否則先試 TW 再試 TWO
   if (exchange === 'TWO') {
-    return await tryFetch(`${ticker}.TWO`);
+    return await ptFetchYahoo(`${ticker}.TWO`);
   }
   try {
-    return await tryFetch(`${ticker}.TW`);
+    return await ptFetchYahoo(`${ticker}.TW`);
   } catch(e) {
-    try {
-      return await tryFetch(`${ticker}.TWO`);
-    } catch(e2) {
-      throw new Error(`${ticker}: 無法取得報價 (${e2.message})`);
-    }
+    return await ptFetchYahoo(`${ticker}.TWO`);
   }
 }
 
@@ -1760,6 +1923,9 @@ async function ptFetchAllPrices() {
   }));
 
   const errors = [];
+
+  // 匯率（美股換算台幣用）
+  try { PT.fx = (await ptFetchYahoo('TWD=X')).price; } catch(e) { PT.fx = PT.fx || 32; }
 
   // 台股（Yahoo Finance via corsproxy.io）
   for (const ticker of twTickers) {
@@ -1794,12 +1960,67 @@ function ptRenderAll() {
       '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--ink3);font-family:var(--mono);font-size:12px">找不到 portfolio.js 資料，請確認已載入</div>';
     return;
   }
+  ptRenderDashboard();
   document.getElementById('ptGroupsContainer').innerHTML = groups.map(g => ptRenderGroup(g)).join('');
+}
+
+// ── 總覽儀表板：總市值 / 總損益 / 今日變動 / 主題配置 ──
+function ptRenderDashboard() {
+  const el = document.getElementById('ptDashboard');
+  if (!el) return;
+  const groups = window.PORTFOLIO?.groups || [];
+  const fx = PT.fx || 32;
+  const palette = ['#2d5a3d','#2a4a8a','#c17d0a','#8a2a4a','#4a2a8a','#2a8a7d','#8a6a2a','#555'];
+  let pricedCost = 0, totalValue = 0, dayChange = 0, priced = 0, total = 0;
+  const alloc = [];
+
+  groups.forEach((g, gi) => {
+    let gv = 0;
+    g.stocks.forEach(s => {
+      total++;
+      const mult = s.currency === 'USD' ? fx : 1;
+      const pd = PT.prices[s.ticker];
+      if (pd?.price) {
+        priced++;
+        pricedCost += s.avgCost * s.shares * mult;
+        const v = pd.price * s.shares * mult;
+        totalValue += v; gv += v;
+        dayChange += (pd.change || 0) * s.shares * mult;
+      }
+    });
+    if (gv > 0) alloc.push({ label: g.icon + g.label, v: gv, color: palette[gi % palette.length] });
+  });
+
+  if (!priced) { el.innerHTML = ''; return; }
+
+  const pnl = totalValue - pricedCost;
+  const pnlPct = pricedCost ? pnl / pricedCost * 100 : 0;
+  const dayPct = totalValue ? dayChange / (totalValue - dayChange) * 100 : 0;
+  const pnlColor = pnl >= 0 ? 'var(--accent)' : 'var(--red)';
+  const dayColor = dayChange >= 0 ? 'var(--accent)' : 'var(--red)';
+  const fmtNT = n => 'NT$' + Math.round(n).toLocaleString('en-US');
+  const sign = n => (n >= 0 ? '+' : '');
+
+  const barSegs = alloc.map(a => '<div style="width:' + (a.v / totalValue * 100).toFixed(1) + '%;background:' + a.color + '" title="' + a.label + '"></div>').join('');
+  const legend = alloc.sort((a,b) => b.v - a.v).map(a =>
+    '<span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px;font-size:11px;color:var(--ink2)"><span style="width:8px;height:8px;border-radius:2px;background:' + a.color + ';display:inline-block"></span>' + a.label + ' ' + (a.v / totalValue * 100).toFixed(1) + '%</span>').join('');
+
+  el.innerHTML =
+    '<div class="stock-card" style="margin-bottom:18px">' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:14px">' +
+        '<div><div style="font-family:var(--mono);font-size:10px;color:var(--ink3);letter-spacing:0.08em">總市值（台幣合併）</div><div style="font-size:20px;font-weight:600;color:var(--ink)">' + fmtNT(totalValue) + '</div></div>' +
+        '<div><div style="font-family:var(--mono);font-size:10px;color:var(--ink3);letter-spacing:0.08em">未實現損益</div><div style="font-size:20px;font-weight:600;color:' + pnlColor + '">' + sign(pnl) + fmtNT(Math.abs(pnl)).replace('NT$', pnl>=0?'NT$':'-NT$') + '（' + sign(pnlPct) + pnlPct.toFixed(2) + '%）</div></div>' +
+        '<div><div style="font-family:var(--mono);font-size:10px;color:var(--ink3);letter-spacing:0.08em">今日變動</div><div style="font-size:20px;font-weight:600;color:' + dayColor + '">' + sign(dayChange) + fmtNT(Math.abs(dayChange)).replace('NT$', dayChange>=0?'NT$':'-NT$') + '（' + sign(dayPct) + dayPct.toFixed(2) + '%）</div></div>' +
+        '<div><div style="font-family:var(--mono);font-size:10px;color:var(--ink3);letter-spacing:0.08em">匯率 / 覆蓋</div><div style="font-size:13px;color:var(--ink2);padding-top:5px">USD/TWD ' + fx.toFixed(2) + '<br>' + priced + '/' + total + ' 檔已計價</div></div>' +
+      '</div>' +
+      '<div style="display:flex;height:10px;border-radius:5px;overflow:hidden;margin-bottom:8px">' + barSegs + '</div>' +
+      '<div>' + legend + '</div>' +
+    '</div>';
 }
 
 function ptRenderGroup(group) {
   const stocks = group.stocks;
-  const USDTWD = 32;
+  const USDTWD = PT.fx || 32;
   let totalCost = 0, totalValue = 0, hasPrices = false;
 
   stocks.forEach(s => {
@@ -1854,11 +2075,24 @@ function ptRenderStockCard(s) {
     else{badge='虧損';badgeCls='status-bad';}
   }
 
+  // 到價提醒（portfolio.js 的 alertAbove / alertBelow）
+  let alertLine = '';
+  if (s.alertAbove != null || s.alertBelow != null) {
+    const hitUp = price !== null && s.alertAbove != null && price >= s.alertAbove;
+    const hitDown = price !== null && s.alertBelow != null && price <= s.alertBelow;
+    const hit = hitUp || hitDown;
+    const parts = [];
+    if (s.alertBelow != null) parts.push('≤' + s.alertBelow);
+    if (s.alertAbove != null) parts.push('≥' + s.alertAbove);
+    alertLine = '<div class="pt-shares" style="color:' + (hit ? 'var(--red)' : 'var(--amber)') + (hit ? ';font-weight:600' : '') + '">' + (hit ? '🔔 已觸價！' : '🔔 ') + parts.join(' / ') + '</div>';
+  }
+
   return `<div class="pt-stock-card">
     <div class="pt-card-left">
       <div class="pt-ticker">${s.ticker}</div>
       <div class="pt-name">${s.name}</div>
       <div class="pt-shares">${s.shares.toLocaleString()} 股 ｜ 均價 ${cur}${fmt(s.avgCost,dp)}</div>
+      ${alertLine}
     </div>
     <div class="pt-card-center">
       <div class="pt-current-price">${price!==null ? cur+fmt(price,dp) : '—'}</div>
@@ -1933,6 +2167,60 @@ function ptSetRefreshBtn(loading) {
 }
 
 function ptSleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── 交易日誌 ──
+function jToggle() {
+  const form = document.getElementById('jForm');
+  const arrow = document.getElementById('jArrow');
+  const open = form.style.display !== 'none';
+  form.style.display = open ? 'none' : 'block';
+  arrow.textContent = open ? '▼' : '▲';
+  if (!open) {
+    const d = document.getElementById('jDate');
+    if (d && !d.value) d.value = new Date().toISOString().slice(0, 10);
+  }
+}
+
+async function appendRowToSheet(sheetName, row) {
+  const cfg = getSheetsConfig();
+  if (!cfg.clientEmail || !cfg.privateKey) throw new Error('請先設定 Google Sheets 憑證');
+  const token = await getAccessToken(cfg);
+  const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + cfg.spreadsheetId +
+    '/values/' + encodeURIComponent(sheetName) + '!A1:append?valueInputOption=USER_ENTERED';
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values: [row] })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error?.message || 'Sheets write failed');
+  }
+}
+
+async function jSubmit() {
+  const date = (document.getElementById('jDate').value || new Date().toISOString().slice(0,10)).replaceAll('-', '/');
+  const ticker = document.getElementById('jTicker').value.trim();
+  const action = document.getElementById('jAction').value;
+  const price = document.getElementById('jPrice').value.trim();
+  const shares = document.getElementById('jShares').value.trim();
+  const reason = document.getElementById('jReason').value.trim();
+  if (!ticker || !reason) { ptShowMsg('代號和「為什麼」為必填', 'warn'); return; }
+
+  const btn = document.getElementById('jSubmitBtn');
+  btn.disabled = true; btn.textContent = '寫入中...';
+  try {
+    await appendRowToSheet('交易日誌', [date, new Date().toLocaleTimeString('zh-TW'), ticker, action, price, shares, reason]);
+    ptShowMsg('✓ 已記入交易日誌', 'ok');
+    document.getElementById('jTicker').value = '';
+    document.getElementById('jPrice').value = '';
+    document.getElementById('jShares').value = '';
+    document.getElementById('jReason').value = '';
+  } catch(e) {
+    ptShowMsg('日誌寫入失敗：' + e.message + '（請確認 Sheets 已建立「交易日誌」分頁）', 'warn');
+  }
+  btn.disabled = false; btn.textContent = '＋ 記一筆';
+}
 
 function ptInit() {
   // 還原 AV key
