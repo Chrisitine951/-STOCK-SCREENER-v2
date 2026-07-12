@@ -26,7 +26,7 @@ TODAY = NOW.strftime('%Y/%m/%d')
 
 def call_gemini(prompt, use_search=True):
     """Call Gemini API with model fallback (flash-lite -> flash) and retry-backoff."""
-    models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash']
+    models = ['gemini-3.1-flash-lite', 'gemini-3.5-flash']
     body = {
         'contents': [{'parts': [{'text': prompt}]}],
         'generationConfig': {'temperature': 0.3, 'maxOutputTokens': 8192}
