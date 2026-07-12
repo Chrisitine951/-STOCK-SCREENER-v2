@@ -4,7 +4,9 @@ on:
   push:
     branches: [ main ]
   schedule:
-    - cron: '0 0 * * 1-5'
+    - cron: '0 0 * * 1-5'   # 台灣 08:00 早報
+    - cron: '45 5 * * 1-5'  # 台灣 13:45 台股收盤到價檢查
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -30,7 +32,7 @@ jobs:
 
   auto_news:
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
@@ -46,4 +48,6 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           SHEETS_CLIENT_EMAIL: ${{ secrets.SHEETS_CLIENT_EMAIL }}
           SHEETS_PRIVATE_KEY: ${{ secrets.SHEETS_PRIVATE_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python auto_news.py
